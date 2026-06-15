@@ -1,0 +1,83 @@
+﻿<UserControl x:Class="SystemManager.Views.TaskManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="CardBackground" Color="#2D2D30"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#0078D4"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#CCCCCC"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#3E3E42"/>
+    </UserControl.Resources>
+    
+    <Grid Background="#1E1E1E" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Диспетчер задач" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimary}" Margin="0,0,0,20"/>
+
+        <!-- Поиск и кнопки -->
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBox Grid.Column="0" 
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Background="{StaticResource CardBackground}"
+                     Foreground="{StaticResource TextPrimary}"
+                     Padding="10,8"
+                     FontSize="14"/>
+            
+            <Button Grid.Column="1" Content="🔄 Обновить" 
+                    Command="{Binding RefreshCommand}"
+                    Margin="10,0,0,0" Padding="15,8"
+                    Background="{StaticResource AccentColor}"
+                    Foreground="White"/>
+            
+            <Button Grid.Column="2" Content="⛔ Завершить процесс" 
+                    Command="{Binding KillCommand}"
+                    Margin="10,0,0,0" Padding="15,8"
+                    Background="#D42B2B"
+                    Foreground="White"/>
+        </Grid>
+
+        <!-- Таблица процессов -->
+        <DataGrid Grid.Row="2" 
+                  ItemsSource="{Binding Processes}"
+                  SelectedItem="{Binding SelectedProcess}"
+                  ContextMenu="{StaticResource TaskManagerContextMenu}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  Background="{StaticResource CardBackground}"
+                  Foreground="{StaticResource TextPrimary}"
+                  RowBackground="{StaticResource CardBackground}"
+                  AlternatingRowBackground="#333337"
+                  BorderBrush="{StaticResource BorderBrush}"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="PID" Binding="{Binding Id}" Width="80"/>
+                <DataGridTextColumn Header="Имя процесса" Binding="{Binding Name}" Width="200"/>
+                <DataGridTextColumn Header="Память (МБ)" Binding="{Binding MemoryMB}" Width="120"/>
+                <DataGridTextColumn Header="Потоки" Binding="{Binding Threads}" Width="80"/>
+                <DataGridTextColumn Header="Время запуска" Binding="{Binding StartTime}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Информация -->
+        <TextBlock Grid.Row="3" Margin="0,10,0,0"
+                   Foreground="{StaticResource TextSecondary}" FontSize="12">
+            <Run Text="Процессов: "/><Run Text="{Binding Processes.Count, Mode=OneWay}"/>
+            <Run Text=" | Выбран: "/><Run Text="{Binding SelectedProcess.Name, Mode=OneWay, FallbackValue='—'}"/>
+        </TextBlock>
+    </Grid>
+</UserControl>

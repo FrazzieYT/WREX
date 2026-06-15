@@ -1,0 +1,276 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Контекстное меню для файлов и папок -->
+    <ContextMenu x:Key="ExplorerItemContextMenu">
+        <MenuItem Header="Открыть" Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📂" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Вырезать" Command="{Binding DataContext.CutCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="✂️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Копировать" Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📋" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Вставить" Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📄" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Переименовать" Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="✏️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Удалить" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="🗑️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Свойства" Command="{Binding DataContext.PropertiesCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="ℹ️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    
+    <!-- Контекстное меню для пустого пространства -->
+    <ContextMenu x:Key="ExplorerBackgroundContextMenu">
+        <MenuItem Header="Создать папку" Command="{Binding DataContext.CreateFolderCommand, RelativeSource={RelativeSource AncestorType=ListBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="📁" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Создать файл" Command="{Binding DataContext.CreateFileCommand, RelativeSource={RelativeSource AncestorType=ListBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="📄" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Вставить" Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="📄" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Обновить" Command="{Binding DataContext.RefreshCommand, RelativeSource={RelativeSource AncestorType=ListBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="🔄" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    
+    <!-- Контекстное меню для диспетчера задач -->
+    <ContextMenu x:Key="TaskManagerContextMenu">
+        <MenuItem Header="Обновить список" Command="{Binding DataContext.RefreshCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}">
+            <MenuItem.Icon>
+                <TextBlock Text="🔄" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Завершить процесс" Command="{Binding DataContext.KillCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="⛔" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Перезапустить процесс" Command="{Binding DataContext.RestartProcessCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="🔁" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Открыть расположение файла" Command="{Binding DataContext.OpenFileLocationCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📂" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Свойства процесса" Command="{Binding DataContext.ShowPropertiesCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="ℹ️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Копировать имя процесса" Command="{Binding DataContext.CopyProcessNameCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📋" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    
+    <!-- Контекстное меню для встроенной консоли -->
+    <ContextMenu x:Key="ConsoleContextMenu">
+        <MenuItem Header="Копировать" Command="ApplicationCommands.Copy">
+            <MenuItem.Icon>
+                <TextBlock Text="📋" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Выделить всё" Command="ApplicationCommands.SelectAll">
+            <MenuItem.Icon>
+                <TextBlock Text="✅" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Очистить консоль" Command="{Binding DataContext.ClearCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="🗑" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Перезапустить оболочку" Command="{Binding DataContext.RestartCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="🔄" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Сохранить вывод в файл" Command="{Binding DataContext.SaveOutputCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
+            <MenuItem.Icon>
+                <TextBlock Text="💾" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    
+    <!-- Контекстное меню для ключей реестра (дерево) -->
+    <ContextMenu x:Key="RegistryKeyContextMenu">
+        <MenuItem Header="Создать ключ" Command="{Binding DataContext.CreateKeyCommand, RelativeSource={RelativeSource AncestorType=TreeView}}">
+            <MenuItem.Icon>
+                <TextBlock Text="➕" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Удалить ключ" Command="{Binding DataContext.DeleteKeyCommand, RelativeSource={RelativeSource AncestorType=TreeView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="🗑️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Переименовать ключ" Command="{Binding DataContext.RenameKeyCommand, RelativeSource={RelativeSource AncestorType=TreeView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="✏️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Добавить в избранное" Command="{Binding DataContext.AddFavoriteCommand, RelativeSource={RelativeSource AncestorType=TreeView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="⭐" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Копировать путь ключа" Command="{Binding DataContext.CopyKeyPathCommand, RelativeSource={RelativeSource AncestorType=TreeView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📋" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Экспортировать ключ" Command="{Binding DataContext.ExportKeyCommand, RelativeSource={RelativeSource AncestorType=TreeView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="💾" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    
+    <!-- Контекстное меню для значений реестра (список) -->
+    <ContextMenu x:Key="RegistryValueContextMenu">
+        <MenuItem Header="Создать значение" Command="{Binding DataContext.CreateValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}">
+            <MenuItem.Icon>
+                <TextBlock Text="➕" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Удалить значение" Command="{Binding DataContext.DeleteValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="🗑️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Переименовать значение" Command="{Binding DataContext.RenameValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="✏️" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Изменить значение" Command="{Binding DataContext.EditValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="💾" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <Separator/>
+        
+        <MenuItem Header="Копировать имя значения" Command="{Binding DataContext.CopyValueNameCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📋" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
+        <MenuItem Header="Копировать данные значения" Command="{Binding DataContext.CopyValueDataCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="📋" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    
+</ResourceDictionary>

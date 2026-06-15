@@ -1,0 +1,161 @@
+<UserControl x:Class="SystemManager.Views.ConsoleView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="CardBackground" Color="#2D2D30"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#0078D4"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#CCCCCC"/>
+        <SolidColorBrush x:Key="ConsoleBackground" Color="#0C0C0C"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#3E3E42"/>
+    </UserControl.Resources>
+    
+    <Grid Background="#1E1E1E" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Встроенная консоль" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimary}" Margin="0,0,0,20"/>
+
+        <!-- Переключатель CMD/PowerShell и кнопки -->
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <RadioButton Grid.Column="0" Content="CMD" 
+                         IsChecked="{Binding IsCmd, Mode=TwoWay}"
+                         GroupName="Shell" Margin="0,0,10,0"
+                         Foreground="{StaticResource TextPrimary}"
+                         FontSize="14"/>
+            <RadioButton Grid.Column="1" Content="PowerShell" 
+                         IsChecked="{Binding IsCmd, Converter={StaticResource InverseBoolConverter}, Mode=TwoWay}"
+                         GroupName="Shell" Margin="0,0,10,0"
+                         Foreground="{StaticResource TextPrimary}"
+                         FontSize="14"/>
+            
+            <Button Grid.Column="3" Content="🗑 Очистить" 
+                    Command="{Binding ClearCommand}"
+                    Margin="10,0,0,0" Padding="15,8"
+                    Background="{StaticResource AccentColor}"
+                    Foreground="White"/>
+            <Button Grid.Column="4" Content="🔄 Перезапустить" 
+                    Command="{Binding RestartCommand}"
+                    Margin="10,0,0,0" Padding="15,8"
+                    Background="#555555"
+                    Foreground="White"/>
+        </Grid>
+
+        <!-- Вывод консоли -->
+        <TextBox Grid.Row="2" 
+                 Text="{Binding Output, Mode=OneWay}"
+                 IsReadOnly="True"
+                 ContextMenu="{StaticResource ConsoleContextMenu}"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 TextWrapping="Wrap"
+                 FontFamily="Consolas"
+                 FontSize="13"
+                 Background="{StaticResource ConsoleBackground}"
+                 Foreground="#CCCCCC"
+                 Padding="10"
+                 BorderThickness="0"/>
+
+        <!-- Поле ввода -->
+        <Grid Grid.Row="3" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBlock Grid.Column="0" Text="> " 
+                       Foreground="{StaticResource AccentColor}"
+                       FontFamily="Consolas" FontSize="14"
+                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+            
+            <TextBox Grid.Column="1" 
+                     Text="{Binding CurrentInput, UpdateSourceTrigger=PropertyChanged}"
+                     Background="{StaticResource CardBackground}"
+                     Foreground="{StaticResource TextPrimary}"
+                     FontFamily="Consolas" FontSize="14"
+                     Padding="10,8">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Return" Command="{Binding ExecuteCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+            
+            <Button Grid.Column="2" Content="▶ Выполнить" 
+                    Command="{Binding ExecuteCommand}"
+                    Margin="10,0,0,0" Padding="15,8"
+                    Background="{StaticResource AccentColor}"
+                    Foreground="White"/>
+        </Grid>
+
+        <!-- Быстрые команды -->
+        <Border Grid.Row="4" Margin="0,15,0,0" 
+                Background="{StaticResource CardBackground}"
+                CornerRadius="8" Padding="15"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="Быстрые команды" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimary}" Margin="0,0,0,10"/>
+                
+                <ScrollViewer VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding QuickCommands}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Name}" 
+                                        ToolTip="{Binding Command}"
+                                        Command="{Binding DataContext.InsertCommandCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding Command}"
+                                        Margin="3"
+                                        Padding="12,6"
+                                        Background="#3E3E42"
+                                        Foreground="{StaticResource TextPrimary}"
+                                        BorderThickness="0"
+                                        Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="border" 
+                                                                Background="{TemplateBinding Background}"
+                                                                CornerRadius="4"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentColor}"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
