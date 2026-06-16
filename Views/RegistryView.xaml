@@ -1,0 +1,219 @@
+<UserControl x:Class="SystemManager.Views.RegistryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#1E1E1E">
+    
+    <UserControl.Resources>
+        <Style TargetType="TreeView">
+            <Setter Property="Background" Value="#252526"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+        </Style>
+
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="#252526"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#3C3C3C"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="Margin" Value="5,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <Border Grid.Row="0" Background="#2D2D30" Padding="10">
+            <TextBlock Text="🔧 Редактор реестра" 
+                       FontSize="16" 
+                       FontWeight="Bold" 
+                       Foreground="#CCCCCC" 
+                       VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- Основной контент с вкладками -->
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            
+            <!-- Вкладка 1 -->
+            <TabItem Header="📁 Реестр" Background="#2D2D30" Foreground="#CCCCCC">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Дерево ключей -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" 
+                                   Text="Ключи реестра" 
+                                   FontSize="14" 
+                                   FontWeight="Bold" 
+                                   Foreground="#CCCCCC" 
+                                   Margin="10,10,10,5"/>
+
+                        <TreeView Grid.Row="1" 
+                                  ItemsSource="{Binding RootKeys}" 
+                                  SelectedItemChanged="TreeView_SelectedItemChanged"
+                                  ContextMenu="{StaticResource RegistryKeyContextMenu}"
+                                  Margin="5">
+                            <TreeView.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📁 " Foreground="#FFD700"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="#CCCCCC"/>
+                                    </StackPanel>
+                                </HierarchicalDataTemplate>
+                            </TreeView.ItemTemplate>
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                    <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+                    </Grid>
+
+                    <!-- Разделитель -->
+                    <GridSplitter Grid.Column="1" 
+                                  Width="5" 
+                                  HorizontalAlignment="Stretch" 
+                                  Background="#3F3F46"/>
+
+                    <!-- Значения -->
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" 
+                                   Text="Значения" 
+                                   FontSize="14" 
+                                   FontWeight="Bold" 
+                                   Foreground="#CCCCCC" 
+                                   Margin="10,10,10,5"/>
+
+                        <ListView Grid.Row="1" 
+                                  x:Name="ValuesList"
+                                  ItemsSource="{Binding Values}" 
+                                  ContextMenu="{StaticResource RegistryValueContextMenu}"
+                                  Margin="5"
+                                  MouseDoubleClick="ValuesList_MouseDoubleClick">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Имя" Width="200" DisplayMemberBinding="{Binding Name}"/>
+                                    <GridViewColumn Header="Тип" Width="100" DisplayMemberBinding="{Binding Kind}"/>
+                                    <GridViewColumn Header="Значение" Width="300" DisplayMemberBinding="{Binding ValueDisplay}"/>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- Вкладка 2 -->
+            <TabItem Header="⭐ Избранное" Background="#2D2D30" Foreground="#CCCCCC">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" 
+                               Text="Избранные ключи" 
+                               FontSize="14" 
+                               FontWeight="Bold" 
+                               Foreground="#CCCCCC" 
+                               Margin="10,10,10,5"/>
+
+                    <ListView Grid.Row="1" 
+                              ItemsSource="{Binding Favorites}"
+                              Margin="5"
+                              MouseDoubleClick="FavoritesList_MouseDoubleClick">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Имя" Width="200" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="Путь" Width="500" DisplayMemberBinding="{Binding Path}"/>
+                                <GridViewColumn Header="Куст" Width="150" DisplayMemberBinding="{Binding HiveDisplay}"/>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="🗑️ Удалить из избранного" 
+                                          Command="{Binding RemoveFavoriteCommand}"
+                                          CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ListView}}"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                    </ListView>
+                </Grid>
+            </TabItem>
+
+            <!-- Вкладка 3 -->
+            <TabItem Header="🔍 Поиск" Background="#2D2D30" Foreground="#CCCCCC">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Панель -->
+                    <Border Grid.Row="0" Background="#2D2D30" Padding="10">
+                        <StackPanel>
+                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <CheckBox Content="Искать в именах ключей" IsChecked="{Binding SearchKeys}"/>
+                                <CheckBox Content="Искать в именах значений" IsChecked="{Binding SearchValues}"/>
+                                <CheckBox Content="Искать в данных значений" IsChecked="{Binding SearchValueData}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Grid.Row="1" 
+                               Text="Результаты поиска" 
+                               FontSize="14" 
+                               FontWeight="Bold" 
+                               Foreground="#CCCCCC" 
+                               Margin="10,10,10,5"/>
+
+                    <ListView Grid.Row="2" 
+                              ItemsSource="{Binding SearchResults}" 
+                              Margin="5"
+                              MouseDoubleClick="SearchResults_MouseDoubleClick">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Тип" Width="80" DisplayMemberBinding="{Binding Type}"/>
+                                <GridViewColumn Header="Имя" Width="200" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="Путь" Width="400" DisplayMemberBinding="{Binding Path}"/>
+                                <GridViewColumn Header="Значение" Width="300" DisplayMemberBinding="{Binding Value}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

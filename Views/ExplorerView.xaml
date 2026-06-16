@@ -1,0 +1,59 @@
+<UserControl x:Class="SystemManager.Views.ExplorerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#1E1E1E">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ContextMenus.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <DockPanel Margin="5">
+            <Button Content="🏠 Домой" Command="{Binding NavigateHomeCommand}" 
+                    Padding="10,5" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding CurrentPath, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalContentAlignment="Center">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding NavigateCommand}" 
+                               CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+        </DockPanel>
+
+        <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+                 Background="#2D2D30" Foreground="White"
+                 MouseDoubleClick="ListBox_MouseDoubleClick"
+                 ContextMenu="{StaticResource ExplorerBackgroundContextMenu}">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="ContextMenu" Value="{StaticResource ExplorerItemContextMenu}"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="25"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Text="{Binding Icon}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="5,0" 
+                                  VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="{Binding FormattedSize}" 
+                                  HorizontalAlignment="Right" Margin="5,0" 
+                                  Foreground="#888888" VerticalAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>
