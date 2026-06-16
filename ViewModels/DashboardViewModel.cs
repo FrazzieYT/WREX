@@ -7,14 +7,6 @@ using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class DriveInfoItem
-    {
-        public string Name { get; set; } = "";
-        public string VolumeLabel { get; set; } = "";
-        public long AvailableFreeSpace { get; set; }
-        public long TotalSize { get; set; }
-    }
-
     public class DashboardViewModel : INotifyPropertyChanged
     {
         public string ComputerName => Environment.MachineName;
@@ -24,9 +16,10 @@ namespace SystemManager.ViewModels
         public int ProcessorCount => Environment.ProcessorCount;
         public bool Is64Bit => Environment.Is64BitOperatingSystem;
         public string SystemDir => Environment.SystemDirectory;
-
-        public bool IsWinRE => RegistryService.IsWinRE();
-        public string EnvironmentMode => IsWinRE ? "🔧 Windows RE (WinPE)" : "🖥️ Обычная ОС";
+        
+        public bool IsWinRe => RegistryService.IsWinRE();
+        
+        public string EnvironmentMode => IsWinRe ? "🔧 Windows RE (WinPE)" : "🖥️ Обычная ОС";
 
         public string OfflineWindowsPath
         {
@@ -36,7 +29,7 @@ namespace SystemManager.ViewModels
                 return string.IsNullOrEmpty(path) ? "Не обнаружена" : path;
             }
         }
-
+        
         public ObservableCollection<DriveInfoItem> Drives { get; } = new();
 
         public DashboardViewModel()
@@ -46,7 +39,14 @@ namespace SystemManager.ViewModels
                 if (drive.IsReady)
                 {
                     string label = "";
-                    try { label = drive.VolumeLabel; } catch { }
+                    try 
+                    { 
+                        label = drive.VolumeLabel; 
+                    } 
+                    catch 
+                    { 
+                        // Игнорируем
+                    }
 
                     Drives.Add(new DriveInfoItem
                     {
@@ -57,13 +57,15 @@ namespace SystemManager.ViewModels
                     });
                 }
             }
-
-            HistoryService.Log("Главная",
-                IsWinRE ? "Запущено в WinRE" : "Запущено в обычной ОС",
-                "System");
+            
+            HistoryService.Log(
+                "Главная",
+                IsWinRe ? "Запущено в WinRE" : "Запущено в обычной ОС"
+            );
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }

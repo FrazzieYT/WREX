@@ -8,26 +8,17 @@ using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class FileSystemItem
-    {
-        public string Name { get; set; } = "";
-        public string FullPath { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public bool IsDirectory { get; set; }
-    }
-
     public class ExplorerViewModel : INotifyPropertyChanged
     {
-        private string _currentPath = "";
+        private string _currentPath = string.Empty;
         private ObservableCollection<FileSystemItem> _items = new();
         private FileSystemItem? _selectedItem;
-
         private FileSystemItem? _clipboardItem;
         private bool _isCutOperation;
-
-        private readonly bool _isWinRE;
+        
+        private readonly bool _isWinRe;
         private readonly string? _offlineWindowsPath;
-
+        
         public string CurrentPath
         {
             get => _currentPath;
@@ -53,7 +44,7 @@ namespace SystemManager.ViewModels
             set { _selectedItem = value; OnPropertyChanged(); }
         }
 
-        public bool IsWinRE => _isWinRE;
+        public bool IsWinRe => _isWinRe;
         public string? OfflineWindowsPath => _offlineWindowsPath;
 
         public ICommand NavigateCommand { get; }
@@ -73,10 +64,10 @@ namespace SystemManager.ViewModels
 
         public ExplorerViewModel()
         {
-            _isWinRE = RegistryService.IsWinRE();
+            _isWinRe = RegistryService.IsWinRE();
             _offlineWindowsPath = RegistryService.DetectOfflineWindowsPath();
             
-            _currentPath = _isWinRE ? "ROOT" : "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}";
+            _currentPath = _isWinRe ? "ROOT" : ":: {20D04FE0-3AEA-1069-A2D8-08002B30309D}";
 
             OpenCommand = new RelayCommand(param => OpenItem(param as FileSystemItem));
             CutCommand = new RelayCommand(param => CutItem(param as FileSystemItem));
@@ -89,15 +80,13 @@ namespace SystemManager.ViewModels
             CreateFileCommand = new RelayCommand(_ => CreateNewFile());
             RefreshCommand = new RelayCommand(_ => LoadItems());
             NavigateToOfflineWindowsCommand = new RelayCommand(_ => NavigateToOfflineWindows());
-            NavigateToRootCommand = new RelayCommand(_ => { _currentPath = "ROOT"; LoadItems(); });
+            NavigateToRootCommand = new RelayCommand(_ => { CurrentPath = "ROOT"; });
 
-            NavigateCommand = new RelayCommand(param => NavigateTo(param?.ToString() ?? ""));
-            DoubleClickCommand = new RelayCommand(_ => NavigateTo(SelectedItem?.FullPath ?? ""));
+            NavigateCommand = new RelayCommand(param => NavigateTo(param?.ToString() ?? string.Empty));
+            DoubleClickCommand = new RelayCommand(_ => NavigateTo(SelectedItem?.FullPath ?? string.Empty));
 
             LoadItems();
-            HistoryService.Log("Открыт проводник",
-                _isWinRE ? "WinRE среда обнаружена" : "Пользователь открыл файловый менеджер",
-                "Navigation");
+            HistoryService.Log("Открыт проводник", _isWinRe ? "WinRE среда обнаружена" : "Пользователь открыл файловый менеджер", "Navigation");
         }
 
         private void NavigateToOfflineWindows()
@@ -183,15 +172,18 @@ namespace SystemManager.ViewModels
         private void RenameItem(FileSystemItem? item)
         {
             if (item == null) return;
-
+            
             string newName = Microsoft.VisualBasic.Interaction.InputBox(
-                "Введите новое имя:", "Переименование", item.Name);
+                "Введите новое имя: ", "Переименование", item.Name);
 
             if (string.IsNullOrWhiteSpace(newName) || newName == item.Name) return;
 
             try
             {
-                string newPath = Path.Combine(Path.GetDirectoryName(item.FullPath)!, newName);
+                string? dirName = Path.GetDirectoryName(item.FullPath);
+                if (string.IsNullOrEmpty(dirName)) return;
+                
+                string newPath = Path.Combine(dirName, newName);
 
                 if (item.IsDirectory)
                     Directory.Move(item.FullPath, newPath);
@@ -212,9 +204,7 @@ namespace SystemManager.ViewModels
             if (item == null) return;
 
             var result = System.Windows.MessageBox.Show(
-                $"Удалить {item.Name}?",
-                "Подтверждение",
-                System.Windows.MessageBoxButton.YesNo);
+                $"Удалить {item.Name}?", "Подтверждение", System.Windows.MessageBoxButton.YesNo);
 
             if (result != System.Windows.MessageBoxResult.Yes) return;
 
@@ -247,14 +237,15 @@ namespace SystemManager.ViewModels
                 try
                 {
                     var files = Directory.GetFiles(item.FullPath, "*", SearchOption.AllDirectories);
-                    var totalSize = 0L;
+                    long totalSize = 0L;
                     foreach (var f in files)
                     {
-                        try { totalSize += new FileInfo(f).Length; } catch { }
+                        try { totalSize += new FileInfo(f).Length; } 
+                        catch { /* Игнорируем ошибки доступа к отдельным файлам */ }
                     }
                     info += $"\nФайлов: {files.Length}\nРазмер: {FormatSize(totalSize)}";
                 }
-                catch { }
+                catch { /* Игнорируем ошибки доступа к паке */ }
             }
 
             System.Windows.MessageBox.Show(info, "Свойства");
@@ -263,7 +254,7 @@ namespace SystemManager.ViewModels
         private void CreateNewFolder()
         {
             string folderName = Microsoft.VisualBasic.Interaction.InputBox(
-                "Введите имя папки:", "Новая папка", "Новая папка");
+                "Введите имя папки: ", "Новая папка", "Новая папка");
 
             if (string.IsNullOrWhiteSpace(folderName)) return;
 
@@ -282,7 +273,7 @@ namespace SystemManager.ViewModels
         private void CreateNewFile()
         {
             string fileName = Microsoft.VisualBasic.Interaction.InputBox(
-                "Введите имя файла:", "Новый файл", "Новый файл.txt");
+                "Введите имя файла: ", "Новый файл", "Новый файл.txt");
 
             if (string.IsNullOrWhiteSpace(fileName)) return;
 
@@ -316,14 +307,12 @@ namespace SystemManager.ViewModels
         private void LoadItems()
         {
             var newItems = new ObservableCollection<FileSystemItem>();
+            
             try
             {
-                // Корневой уровень — список дисков
-                if (CurrentPath == "ROOT" ||
-                    CurrentPath == "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}")
+                if (CurrentPath == "ROOT" || CurrentPath == ":: {20D04FE0-3AEA-1069-A2D8-08002B30309D}")
                 {
-                    // Если WinRE — добавить ярлык на offline Windows
-                    if (_isWinRE && !string.IsNullOrEmpty(_offlineWindowsPath))
+                    if (_isWinRe && !string.IsNullOrEmpty(_offlineWindowsPath))
                     {
                         newItems.Add(new FileSystemItem
                         {
@@ -338,11 +327,12 @@ namespace SystemManager.ViewModels
                     {
                         if (drive.IsReady)
                         {
-                            string label = "";
-                            try { label = drive.VolumeLabel; } catch { }
+                            string label = string.Empty;
+                            try { label = drive.VolumeLabel; } 
+                            catch { /* Игнорируем ошибки доступа к метке тома */ }
 
                             string driveLabel = drive.Name.TrimEnd('\\');
-                            if (drive.Name.StartsWith(@"X:\", StringComparison.OrdinalIgnoreCase))
+                            if (drive.Name.StartsWith("X:\\", StringComparison.OrdinalIgnoreCase))
                                 driveLabel = "X: (WinRE)";
                             else if (!string.IsNullOrEmpty(label))
                                 driveLabel = $"{drive.Name.TrimEnd('\\')} ({label})";
@@ -359,7 +349,6 @@ namespace SystemManager.ViewModels
                 }
                 else if (Directory.Exists(CurrentPath))
                 {
-                    // Кнопка "Назад к корню"
                     newItems.Add(new FileSystemItem
                     {
                         Name = ".. (корневой уровень)",
@@ -368,7 +357,6 @@ namespace SystemManager.ViewModels
                         IsDirectory = true
                     });
 
-                    // Кнопка "Назад на уровень вверх"
                     var parent = Directory.GetParent(CurrentPath);
                     if (parent != null)
                     {
@@ -391,6 +379,7 @@ namespace SystemManager.ViewModels
                             IsDirectory = true
                         });
                     }
+                    
                     foreach (var file in Directory.GetFiles(CurrentPath))
                     {
                         newItems.Add(new FileSystemItem
@@ -404,7 +393,6 @@ namespace SystemManager.ViewModels
                 }
                 else
                 {
-                    // Fallback — показать диски
                     foreach (var drive in DriveInfo.GetDrives())
                     {
                         if (drive.IsReady)
@@ -421,24 +409,30 @@ namespace SystemManager.ViewModels
                 }
             }
             catch (Exception ex)
-            {
+            { 
                 System.Windows.MessageBox.Show($"Ошибка доступа: {ex.Message}", "Проводник");
                 HistoryService.Log("Ошибка доступа", ex.Message, "File");
             }
+            
             Items = newItems;
         }
 
-        private string FormatSize(long bytes)
+        private static string FormatSize(long bytes)
         {
             string[] sizes = { "Б", "КБ", "МБ", "ГБ", "ТБ" };
             int order = 0;
             double size = bytes;
-            while (size >= 1024 && order < sizes.Length - 1) { order++; size /= 1024; }
+            while (size >= 1024 && order < sizes.Length - 1) 
+            { 
+                order++; 
+                size /= 1024; 
+            }
             return $"{size:0.##} {sizes[order]}";
         }
-
+        
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)   
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

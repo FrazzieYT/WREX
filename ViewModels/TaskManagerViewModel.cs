@@ -10,27 +10,13 @@ using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class ProcessItem : INotifyPropertyChanged
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
-        public string Description { get; set; } = "";
-        public long MemoryMB { get; set; }
-        public int Threads { get; set; }
-        public string StartTime { get; set; } = "";
-        public string FullPath { get; set; } = "";
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    }
-
-    public class TaskManagerViewModel : INotifyPropertyChanged
+    public class TaskManagerViewModel : INotifyPropertyChanged, IDisposable
     {
         private ObservableCollection<ProcessItem> _processes = new();
         private ProcessItem? _selectedProcess;
-        private string _searchText = "";
-        private Timer _refreshTimer;
+        private string _searchText = string.Empty;
+        private readonly Timer _refreshTimer;
+        private bool _disposed;
 
         public ObservableCollection<ProcessItem> Processes
         {
@@ -41,7 +27,11 @@ namespace SystemManager.ViewModels
         public ProcessItem? SelectedProcess
         {
             get => _selectedProcess;
-            set { _selectedProcess = value; OnPropertyChanged(); }
+            set 
+            { 
+                _selectedProcess = value; 
+                OnPropertyChanged(); 
+            }
         }
 
         public string SearchText
@@ -57,7 +47,6 @@ namespace SystemManager.ViewModels
 
         public ICommand RefreshCommand { get; }
         public ICommand KillCommand { get; }
-        
         public ICommand RestartProcessCommand { get; }
         public ICommand OpenFileLocationCommand { get; }
         public ICommand ShowPropertiesCommand { get; }
@@ -76,92 +65,96 @@ namespace SystemManager.ViewModels
             RefreshProcesses();
 
             _refreshTimer = new Timer(3000);
-            _refreshTimer.Elapsed += (s, e) =>
-            {
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() => RefreshProcesses());
-            };
+            _refreshTimer.Elapsed += (_, _) => 
+                System.Windows.Application.Current?.Dispatcher?.Invoke(RefreshProcesses);
             _refreshTimer.Start();
         }
-        
-        private string GetFullPath(Process p)
+
+        private static string GetFullPath(Process p)
         {
-            try { return p.MainModule?.FileName ?? ""; } 
-            catch { return ""; }
+            try { return p.MainModule?.FileName ?? string.Empty; } 
+            catch { return string.Empty; }
         }
         
+        private static string GetDescription(Process p)
+        {
+            try { return p.MainWindowTitle; } 
+            catch { return string.Empty; }
+        }
+
+        private static string GetStartTime(Process p)
+        {
+            try { return p.StartTime.ToString("HH:mm:ss"); } 
+            catch { return "N/A"; }
+        }
+
         private void RestartProcess(object? parameter)
         {
-            if (parameter is ProcessItem process && !string.IsNullOrEmpty(process.FullPath))
+            if (parameter is not ProcessItem process || string.IsNullOrEmpty(process.FullPath)) return;
+
+            try
             {
-                try
-                {
-                    var proc = Process.GetProcessById(process.Id);
-                    proc.Kill();
-                    proc.WaitForExit(1000);
-                    
-                    Process.Start(process.FullPath);
-                    HistoryService.Log("Перезапуск процесса", $"Имя: {process.Name}, Путь: {process.FullPath}", "TaskManager");
-                    RefreshProcesses();
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Не удалось перезапустить: {ex.Message}", "Ошибка");
-                }
+                var proc = Process.GetProcessById(process.Id);
+                proc.Kill();
+                proc.WaitForExit(1000);
+                
+                SystemLauncher.Launch(process.FullPath);
+                
+                HistoryService.Log("Перезапуск процесса", $"Имя: {process.Name}, PID: {process.Id}", "TaskManager");
+                RefreshProcesses();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Не удалось перезапустить: {ex.Message}", "Ошибка");
             }
         }
         
         private void OpenFileLocation(object? parameter)
         {
-            if (parameter is ProcessItem process && !string.IsNullOrEmpty(process.FullPath))
+            if (parameter is not ProcessItem process || string.IsNullOrEmpty(process.FullPath)) return;
+
+            try
             {
-                try
-                {
-                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{process.FullPath}\"");
-                    HistoryService.Log("Открыто расположение файла", process.FullPath, "TaskManager");
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Не удалось открыть: {ex.Message}", "Ошибка");
-                }
+                SystemLauncher.Launch("explorer.exe", $"/select,\"{process.FullPath}\"");
+                HistoryService.Log("Открыто расположение файла", process.FullPath, "TaskManager");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Не удалось открыть: {ex.Message}", "Ошибка");
             }
         }
         
         private void ShowProperties(object? parameter)
         {
-            if (parameter is ProcessItem process)
-            {
-                var info = $"Имя: {process.Name}\n" +
-                           $"Описание: {process.Description}\n" +
-                           $"PID: {process.Id}\n" +
-                           $"Память: {process.MemoryMB} МБ\n" +
-                           $"Потоки: {process.Threads}\n" +
-                           $"Путь: {process.FullPath}";
-                
-                System.Windows.MessageBox.Show(info, $"Свойства: {process.Name}", 
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-            }
+            if (parameter is not ProcessItem process) return;
+            
+            var info = $"Имя: {process.Name}\n" +
+                       $"Описание: {process.Description}\n" +
+                       $"PID: {process.Id}\n" +
+                       $"Память: {process.MemoryMb} МБ\n" +
+                       $"Потоки: {process.Threads}\n" +
+                       $"Путь: {process.FullPath}";
+            
+            System.Windows.MessageBox.Show(info, $"Свойства: {process.Name}", 
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
         
         private void CopyProcessName(object? parameter)
         {
-            if (parameter is ProcessItem process)
-            {
-                System.Windows.Clipboard.SetText(process.Name);
-                HistoryService.Log("Скопировано имя процесса", process.Name, "TaskManager");
-            }
+            if (parameter is not ProcessItem process) return;
+
+            System.Windows.Clipboard.SetText(process.Name);
+            HistoryService.Log("Скопировано имя процесса", process.Name, "TaskManager");
         }
         
-        public void RefreshProcesses()
+        private void RefreshProcesses()
         {
             try
             {
                 var query = Process.GetProcesses()
-                    .Where(p => string.IsNullOrWhiteSpace(SearchText) ||
-                                p.ProcessName.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0)
-                    .OrderByDescending(p =>
-                    {
-                        try { return p.WorkingSet64; } catch { return 0L; }
-                    })
+                    .Where(p => string.IsNullOrWhiteSpace(SearchText) || 
+                                p.ProcessName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(p => { try { return p.WorkingSet64; } catch { return 0L; } })
                     .Select(p =>
                     {
                         try
@@ -171,34 +164,30 @@ namespace SystemManager.ViewModels
                                 Id = p.Id,
                                 Name = p.ProcessName,
                                 Description = GetDescription(p),
-                                MemoryMB = p.WorkingSet64 / 1024 / 1024,
+                                MemoryMb = p.WorkingSet64 / 1024 / 1024,
                                 Threads = p.Threads.Count,
                                 StartTime = GetStartTime(p),
                                 FullPath = GetFullPath(p)
                             };
                         }
-                        catch { return null; }
+                        catch
+                        {
+                            return null;
+                        }
                     })
-                    .Where(p => p != null)
+                    .OfType<ProcessItem>()
                     .ToList();
 
-                Processes = new ObservableCollection<ProcessItem>(query!);
+                Processes = new ObservableCollection<ProcessItem>(query);
             }
-            catch { }
+            catch
+            {
+                // Игнорируем
+            }
         }
 
-        private string GetDescription(Process p)
-        {
-            try { return p.MainWindowTitle; } catch { return ""; }
-        }
-
-        private string GetStartTime(Process p)
-        {
-            try { return p.StartTime.ToString("HH:mm:ss"); } catch { return "N/A"; }
-        }
-
-        public void KillProcess()
-        {
+        private void KillProcess()
+        { 
             if (SelectedProcess == null) return;
 
             try
@@ -220,8 +209,16 @@ namespace SystemManager.ViewModels
             }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _refreshTimer?.Dispose();
+            _disposed = true;
+        }
+        
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }

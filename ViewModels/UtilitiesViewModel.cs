@@ -6,15 +6,6 @@ using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class UtilityItem
-    {
-        public string Name { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string FileName { get; set; } = "";
-        public string Arguments { get; set; } = "";
-        public bool IsAvailable { get; set; } = true;
-    }
-
     public class UtilitiesViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<UtilityItem> Utilities { get; } = new();
@@ -22,18 +13,16 @@ namespace SystemManager.ViewModels
 
         public UtilitiesViewModel()
         {
-            bool isWinRE = RegistryService.IsWinRE();
-
-            // Базовые утилиты, доступные в обеих средах
+            bool isWinRe = RegistryService.IsWinRE();
+            
             Utilities.Add(new UtilityItem { Name = "Командная строка", Description = "cmd.exe", FileName = "cmd.exe" });
             Utilities.Add(new UtilityItem { Name = "PowerShell", Description = "powershell.exe", FileName = "powershell.exe" });
             Utilities.Add(new UtilityItem { Name = "Редактор реестра", Description = "regedit", FileName = "regedit.exe" });
             Utilities.Add(new UtilityItem { Name = "Блокнот", Description = "notepad.exe", FileName = "notepad.exe" });
             Utilities.Add(new UtilityItem { Name = "Диспетчер задач", Description = "taskmgr", FileName = "taskmgr.exe" });
 
-            if (isWinRE)
+            if (isWinRe)
             {
-                // Специфичные утилиты для WinRE
                 Utilities.Add(new UtilityItem { Name = "DiskPart", Description = "diskpart.exe", FileName = "diskpart.exe" });
                 Utilities.Add(new UtilityItem { Name = "BootRec", Description = "bootrec.exe", FileName = "cmd.exe", Arguments = "/k bootrec.exe" });
                 Utilities.Add(new UtilityItem { Name = "BCDEdit", Description = "bcdedit.exe", FileName = "cmd.exe", Arguments = "/k bcdedit.exe" });
@@ -42,7 +31,6 @@ namespace SystemManager.ViewModels
             }
             else
             {
-                // Утилиты только для обычной ОС (требуют запущенных служб)
                 Utilities.Add(new UtilityItem { Name = "Службы", Description = "services.msc", FileName = "services.msc" });
                 Utilities.Add(new UtilityItem { Name = "Диспетчер устройств", Description = "devmgmt.msc", FileName = "devmgmt.msc" });
                 Utilities.Add(new UtilityItem { Name = "Управление дисками", Description = "diskmgmt.msc", FileName = "diskmgmt.msc" });
@@ -55,7 +43,7 @@ namespace SystemManager.ViewModels
 
             LaunchCommand = new RelayCommand(param =>
             {
-                if (param is UtilityItem item && item.IsAvailable)
+                if (param is UtilityItem item)
                 {
                     SystemLauncher.Launch(item.FileName, item.Arguments);
                     HistoryService.Log("Запуск утилиты", $"{item.Name} ({item.FileName})", "Utility");
@@ -64,6 +52,7 @@ namespace SystemManager.ViewModels
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }

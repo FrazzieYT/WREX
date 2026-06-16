@@ -1,16 +1,16 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
-using SystemManager.Services;
 using SystemManager.Models;
+using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
@@ -20,9 +20,10 @@ namespace SystemManager.ViewModels
         private readonly ObservableCollection<RegistryValueItem> _values = new();
         private readonly ObservableCollection<RegistrySearchResult> _searchResults = new();
         private readonly ObservableCollection<FavoriteRegistryEntry> _favorites = new();
+
         private RegistryTreeNode? _selectedNode;
         private RegistryValueItem? _selectedValue;
-        private string _searchText = "";
+        private string _searchText = string.Empty;
         private bool _isSearching;
         private bool _searchKeys = true;
         private bool _searchValues = true;
@@ -37,31 +38,83 @@ namespace SystemManager.ViewModels
         public RegistryTreeNode? SelectedNode
         {
             get => _selectedNode;
-            set { _selectedNode = value; OnPropertyChanged(); LoadValues(); }
+            set
+            {
+                _selectedNode = value;
+                OnPropertyChanged();
+                LoadValues();
+            }
         }
 
         public RegistryValueItem? SelectedValue
         {
             get => _selectedValue;
-            set { _selectedValue = value; OnPropertyChanged(); }
+            set
+            {
+                _selectedValue = value;
+                OnPropertyChanged();
+            }
         }
 
         public string SearchText
         {
             get => _searchText;
-            set { _searchText = value; OnPropertyChanged(); }
+            set
+            {
+                _searchText = value;
+                OnPropertyChanged();
+            }
         }
 
         public bool IsSearching
         {
             get => _isSearching;
-            set { _isSearching = value; OnPropertyChanged(); }
+            set
+            {
+                _isSearching = value;
+                OnPropertyChanged();
+            }
         }
 
-        public bool SearchKeys { get => _searchKeys; set { _searchKeys = value; OnPropertyChanged(); } }
-        public bool SearchValues { get => _searchValues; set { _searchValues = value; OnPropertyChanged(); } }
-        public bool SearchValueData { get => _searchValueData; set { _searchValueData = value; OnPropertyChanged(); } }
-        public string StatusMessage { get => _statusMessage; set { _statusMessage = value; OnPropertyChanged(); } }
+        public bool SearchKeys
+        {
+            get => _searchKeys;
+            set
+            {
+                _searchKeys = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool SearchValues
+        {
+            get => _searchValues;
+            set
+            {
+                _searchValues = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool SearchValueData
+        {
+            get => _searchValueData;
+            set
+            {
+                _searchValueData = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set
+            {
+                _statusMessage = value;
+                OnPropertyChanged();
+            }
+        }
 
         public ICommand CreateKeyCommand { get; }
         public ICommand DeleteKeyCommand { get; }
@@ -96,21 +149,22 @@ namespace SystemManager.ViewModels
             RemoveFavoriteCommand = new RelayCommand(param => RemoveFavorite(param as FavoriteRegistryEntry));
             SearchCommand = new RelayCommand(_ => Search());
             NavigateToFavoriteCommand = new RelayCommand(param => NavigateToFavorite(param as FavoriteRegistryEntry));
-            NavigateToSearchResultCommand = new RelayCommand(param => NavigateToSearchResult(param as RegistrySearchResult));
-            
+            NavigateToSearchResultCommand =
+                new RelayCommand(param => NavigateToSearchResult(param as RegistrySearchResult));
+
             LoadOfflineHiveCommand = new RelayCommand(param => LoadOfflineHive(param?.ToString()));
             UnloadOfflineHiveCommand = new RelayCommand(param => UnloadOfflineHive(param?.ToString()));
-            
-            // Команды для контекстного меню
+
             CopyKeyPathCommand = new RelayCommand(_ => CopyKeyPath());
             ExportKeyCommand = new RelayCommand(_ => ExportKey());
             CopyValueNameCommand = new RelayCommand(param => CopyValueName(param as RegistryValueItem));
             CopyValueDataCommand = new RelayCommand(param => CopyValueData(param as RegistryValueItem));
-            CopySearchResultPathCommand = new RelayCommand(param => CopySearchResultPath(param as RegistrySearchResult));
+            CopySearchResultPathCommand =
+                new RelayCommand(param => CopySearchResultPath(param as RegistrySearchResult));
 
             LoadRootKeys();
             LoadFavorites();
-            
+
             HistoryService.Log("Открыт редактор реестра", "Пользователь открыл вкладку реестра", "Registry");
         }
 
@@ -123,28 +177,29 @@ namespace SystemManager.ViewModels
                 {
                     Hive = hive,
                     Name = RegistryService.HiveToString(hive),
-                    FullPath = ""
+                    FullPath = string.Empty
                 });
             }
         }
-        
+
         private void LoadOfflineHive(string? hiveName)
         {
             if (string.IsNullOrWhiteSpace(hiveName))
             {
-                // Показать диалог выбора hive
                 var dialog = new InputDialog("Загрузка offline hive",
                     "Введите имя hive (SYSTEM, SOFTWARE, SAM, SECURITY, DEFAULT):");
                 if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.InputText))
                 {
                     hiveName = dialog.InputText.ToUpper();
                 }
-                else return;
+                else
+                {
+                    return;
+                }
             }
 
             if (RegistryService.LoadOfflineHive(hiveName))
             {
-                // Обновить дерево — добавить загруженный hive
                 _rootKeys.Add(new RegistryTreeNode
                 {
                     Hive = RegistryHive.LocalMachine,
@@ -155,7 +210,8 @@ namespace SystemManager.ViewModels
             }
             else
             {
-                MessageBox.Show($"Не удалось загрузить hive '{hiveName}'. Убедитесь, что целевая Windows найдена.", "Ошибка");
+                MessageBox.Show($"Не удалось загрузить hive '{hiveName}'. Убедитесь, что целевая Windows найдена.",
+                    "Ошибка");
                 StatusMessage = $"Ошибка загрузки hive: {hiveName}";
             }
         }
@@ -171,7 +227,7 @@ namespace SystemManager.ViewModels
                 StatusMessage = $"Hive '{hiveName}' выгружен";
             }
         }
-        
+
         public void LoadChildren(RegistryTreeNode parentNode)
         {
             if (!parentNode.Hive.HasValue || parentNode.ChildrenLoaded) return;
@@ -182,7 +238,9 @@ namespace SystemManager.ViewModels
                 parentNode.Children.Clear();
                 foreach (var subKey in subKeys.OrderBy(k => k))
                 {
-                    var childPath = string.IsNullOrEmpty(parentNode.FullPath) ? subKey : $"{parentNode.FullPath}\\{subKey}";
+                    var childPath = string.IsNullOrEmpty(parentNode.FullPath)
+                        ? subKey
+                        : $"{parentNode.FullPath}\\{subKey}";
                     parentNode.Children.Add(new RegistryTreeNode
                     {
                         Hive = parentNode.Hive.Value,
@@ -190,11 +248,12 @@ namespace SystemManager.ViewModels
                         FullPath = childPath
                     });
                 }
+
                 parentNode.ChildrenLoaded = true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка загрузки подключей: {ex.Message}");
+                Debug.WriteLine($"Ошибка загрузки подключей: {ex.Message}");
             }
         }
 
@@ -209,7 +268,9 @@ namespace SystemManager.ViewModels
                 foreach (var valueName in valueNames.OrderBy(v => v))
                 {
                     var value = RegistryService.GetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, valueName);
-                    var kind = RegistryService.GetValueKind(SelectedNode.Hive.Value, SelectedNode.FullPath, valueName) ?? RegistryValueKind.String;
+                    var kind =
+                        RegistryService.GetValueKind(SelectedNode.Hive.Value, SelectedNode.FullPath, valueName) ??
+                        RegistryValueKind.String;
 
                     _values.Add(new RegistryValueItem
                     {
@@ -220,6 +281,7 @@ namespace SystemManager.ViewModels
                         Hive = SelectedNode.Hive.Value
                     });
                 }
+
                 StatusMessage = $"Загружено {_values.Count} значений";
             }
             catch (Exception ex)
@@ -241,7 +303,9 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    var newPath = string.IsNullOrEmpty(SelectedNode.FullPath) ? dialog.InputText : $"{SelectedNode.FullPath}\\{dialog.InputText}";
+                    var newPath = string.IsNullOrEmpty(SelectedNode.FullPath)
+                        ? dialog.InputText
+                        : $"{SelectedNode.FullPath}\\{dialog.InputText}";
                     RegistryService.CreateKey(SelectedNode.Hive.Value, newPath);
                     SelectedNode.ChildrenLoaded = false;
                     LoadChildren(SelectedNode);
@@ -263,14 +327,15 @@ namespace SystemManager.ViewModels
                 return;
             }
 
-            if (MessageBox.Show($"Вы уверены, что хотите удалить ключ {SelectedNode.FullPath}?", "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            if (MessageBox.Show($"Вы уверены, что хотите удалить ключ {SelectedNode.FullPath}?",
+                    "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 try
                 {
                     RegistryService.DeleteKey(SelectedNode.Hive.Value, SelectedNode.FullPath, true);
                     StatusMessage = $"Ключ удален: {SelectedNode.FullPath}";
-                    
-                    var parentPath = Path.GetDirectoryName(SelectedNode.FullPath) ?? "";
+
+                    var parentPath = Path.GetDirectoryName(SelectedNode.FullPath) ?? string.Empty;
                     var parentNode = FindNode(_rootKeys, SelectedNode.Hive.Value, parentPath);
                     if (parentNode != null)
                     {
@@ -300,22 +365,25 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    var parentPath = Path.GetDirectoryName(SelectedNode.FullPath) ?? "";
-                    var newPath = string.IsNullOrEmpty(parentPath) ? dialog.InputText : $"{parentPath}\\{dialog.InputText}";
-                    
+                    var parentPath = Path.GetDirectoryName(SelectedNode.FullPath) ?? string.Empty;
+                    var newPath = string.IsNullOrEmpty(parentPath)
+                        ? dialog.InputText
+                        : $"{parentPath}\\{dialog.InputText}";
+
                     RegistryService.CreateKey(SelectedNode.Hive.Value, newPath);
-                    
+
                     var valueNames = RegistryService.GetValueNames(SelectedNode.Hive.Value, SelectedNode.FullPath);
                     foreach (var valueName in valueNames)
                     {
                         var value = RegistryService.GetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, valueName);
-                        var kind = RegistryService.GetValueKind(SelectedNode.Hive.Value, SelectedNode.FullPath, valueName) ?? RegistryValueKind.String;
+                        var kind = RegistryService.GetValueKind(SelectedNode.Hive.Value, SelectedNode.FullPath,
+                            valueName) ?? RegistryValueKind.String;
                         RegistryService.SetValue(SelectedNode.Hive.Value, newPath, valueName, value!, kind);
                     }
-                    
+
                     RegistryService.DeleteKey(SelectedNode.Hive.Value, SelectedNode.FullPath, true);
                     StatusMessage = $"Ключ переименован: {SelectedNode.Name} → {dialog.InputText}";
-                    
+
                     var parentNode = FindNode(_rootKeys, SelectedNode.Hive.Value, parentPath);
                     if (parentNode != null)
                     {
@@ -344,7 +412,8 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    RegistryService.SetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, dialog.InputText, "", RegistryValueKind.String);
+                    RegistryService.SetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, dialog.InputText,
+                        string.Empty, RegistryValueKind.String);
                     LoadValues();
                     StatusMessage = $"Значение создано: {dialog.InputText}";
                 }
@@ -364,7 +433,8 @@ namespace SystemManager.ViewModels
                 return;
             }
 
-            if (MessageBox.Show($"Вы уверены, что хотите удалить значение {valueItem.Name}?", "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            if (MessageBox.Show($"Вы уверены, что хотите удалить значение {valueItem.Name}?", "Подтверждение удаления",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -393,7 +463,8 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    RegistryService.SetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, dialog.InputText, valueItem.Value!, valueItem.Kind);
+                    RegistryService.SetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, dialog.InputText,
+                        valueItem.Value!, valueItem.Kind);
                     RegistryService.DeleteValue(SelectedNode.Hive.Value, SelectedNode.FullPath, valueItem.Name);
                     LoadValues();
                     StatusMessage = $"Значение переименовано: {valueItem.Name} → {dialog.InputText}";
@@ -419,7 +490,8 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    RegistryService.SetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, valueItem.Name, dialog.NewValue, dialog.NewKind);
+                    RegistryService.SetValue(SelectedNode.Hive.Value, SelectedNode.FullPath, valueItem.Name,
+                        dialog.NewValue, dialog.NewKind);
                     LoadValues();
                     StatusMessage = $"Значение изменено: {valueItem.Name}";
                 }
@@ -472,8 +544,9 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    var results = RegistryService.SearchRegistry(SearchText, null, SearchKeys, SearchValues, SearchValueData, 100);
-                    
+                    var results = RegistryService.SearchRegistry(SearchText, null, SearchKeys, SearchValues,
+                        SearchValueData, 100);
+
                     Application.Current?.Dispatcher?.Invoke(() =>
                     {
                         _searchResults.Clear();
@@ -541,6 +614,7 @@ namespace SystemManager.ViewModels
                     if (found != null) return found;
                 }
             }
+
             return null;
         }
 
@@ -552,21 +626,21 @@ namespace SystemManager.ViewModels
                 _favorites.Add(fav);
             }
         }
-        
+
         private void CopyKeyPath()
         {
             if (SelectedNode != null)
             {
-                System.Windows.Clipboard.SetText(SelectedNode.FullPath);
+                Clipboard.SetText(SelectedNode.FullPath);
                 HistoryService.Log("Скопирован путь ключа", SelectedNode.FullPath, "Registry");
             }
         }
-        
+
         private void ExportKey()
         {
             if (SelectedNode == null || !SelectedNode.Hive.HasValue) return;
 
-            var dialog = new Microsoft.Win32.SaveFileDialog
+            var dialog = new SaveFileDialog
             {
                 Filter = "Файлы реестра (*.reg)|*.reg",
                 DefaultExt = "reg",
@@ -577,154 +651,59 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    var psi = new System.Diagnostics.ProcessStartInfo
+                    var psi = new ProcessStartInfo
                     {
                         FileName = "reg.exe",
                         Arguments = $"export \"{SelectedNode.FullPath}\" \"{dialog.FileName}\" /y",
                         CreateNoWindow = true,
                         UseShellExecute = false
                     };
-                
-                    var process = System.Diagnostics.Process.Start(psi);
+
+                    var process = Process.Start(psi);
                     process?.WaitForExit();
-                
-                    HistoryService.Log("Экспорт ключа реестра", $"Путь: {SelectedNode.FullPath} -> {dialog.FileName}", "Registry");
+
+                    HistoryService.Log("Экспорт ключа реестра", $"Путь: {SelectedNode.FullPath} -> {dialog.FileName}",
+                        "Registry");
                     StatusMessage = "Ключ успешно экспортирован";
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show($"Ошибка экспорта: {ex.Message}", "Ошибка");
+                    MessageBox.Show($"Ошибка экспорта: {ex.Message}", "Ошибка");
                     StatusMessage = $"Ошибка: {ex.Message}";
                 }
             }
         }
-        
+
         private void CopyValueName(RegistryValueItem? item)
         {
             if (item != null)
             {
-                System.Windows.Clipboard.SetText(item.Name);
+                Clipboard.SetText(item.Name);
                 HistoryService.Log("Скопировано имя значения", item.Name, "Registry");
             }
         }
-        
+
         private void CopyValueData(RegistryValueItem? item)
         {
             if (item != null)
             {
-                System.Windows.Clipboard.SetText(item.ValueDisplay);
+                Clipboard.SetText(item.ValueDisplay);
                 HistoryService.Log("Скопированы данные значения", item.ValueDisplay, "Registry");
             }
         }
-        
+
         private void CopySearchResultPath(RegistrySearchResult? result)
         {
             if (result != null)
             {
-                System.Windows.Clipboard.SetText(result.FullPath);
+                Clipboard.SetText(result.FullPath);
                 HistoryService.Log("Скопирован путь из поиска", result.FullPath, "Registry");
             }
         }
 
-        private void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
         public event PropertyChangedEventHandler? PropertyChanged;
-    }
 
-    public class InputDialog : Window
-    {
-        private readonly System.Windows.Controls.TextBox _textBox;
-        public string InputText => _textBox.Text;
-
-        public InputDialog(string title, string prompt, string defaultValue = "")
-        {
-            Title = title;
-            Width = 400;
-            Height = 150;
-            WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            ResizeMode = ResizeMode.NoResize;
-
-            var grid = new System.Windows.Controls.Grid { Margin = new Thickness(10) };
-            grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
-
-            grid.Children.Add(new System.Windows.Controls.Label { Content = prompt, Margin = new Thickness(0, 0, 0, 5) });
-            System.Windows.Controls.Grid.SetRow(grid.Children[0], 0);
-
-            _textBox = new System.Windows.Controls.TextBox { Text = defaultValue, Margin = new Thickness(0, 0, 0, 10) };
-            System.Windows.Controls.Grid.SetRow(_textBox, 1);
-            grid.Children.Add(_textBox);
-
-            var buttonPanel = new System.Windows.Controls.StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            System.Windows.Controls.Grid.SetRow(buttonPanel, 2);
-
-            var okButton = new System.Windows.Controls.Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 5, 0), IsDefault = true };
-            okButton.Click += (_, _) => { DialogResult = true; };
-            buttonPanel.Children.Add(okButton);
-
-            var cancelButton = new System.Windows.Controls.Button { Content = "Отмена", Width = 80, IsCancel = true };
-            cancelButton.Click += (_, _) => { DialogResult = false; };
-            buttonPanel.Children.Add(cancelButton);
-
-            grid.Children.Add(buttonPanel);
-            Content = grid;
-        }
-    }
-
-    public class EditValueDialog : Window
-    {
-        private readonly System.Windows.Controls.TextBox _valueTextBox;
-        private readonly System.Windows.Controls.ComboBox _typeComboBox;
-
-        public string NewValue => _valueTextBox.Text;
-        public RegistryValueKind NewKind => (RegistryValueKind)_typeComboBox.SelectedItem;
-
-        public EditValueDialog(string name, string value, RegistryValueKind kind)
-        {
-            Title = "Редактирование значения";
-            Width = 450;
-            Height = 200;
-            WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            ResizeMode = ResizeMode.NoResize;
-
-            var grid = new System.Windows.Controls.Grid { Margin = new Thickness(10) };
-            for (int i = 0; i < 4; i++) grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
-
-            var nameLabel = new System.Windows.Controls.Label { Content = $"Имя: {name}", Margin = new Thickness(0, 0, 0, 5) };
-            System.Windows.Controls.Grid.SetRow(nameLabel, 0);
-            grid.Children.Add(nameLabel);
-
-            var valueLabel = new System.Windows.Controls.Label { Content = "Значение:", Margin = new Thickness(0, 0, 0, 5) };
-            System.Windows.Controls.Grid.SetRow(valueLabel, 1);
-            grid.Children.Add(valueLabel);
-
-            _valueTextBox = new System.Windows.Controls.TextBox { Text = value, Margin = new Thickness(0, 0, 0, 10) };
-            System.Windows.Controls.Grid.SetRow(_valueTextBox, 1);
-            grid.Children.Add(_valueTextBox);
-
-            var typeLabel = new System.Windows.Controls.Label { Content = "Тип:", Margin = new Thickness(0, 0, 0, 5) };
-            System.Windows.Controls.Grid.SetRow(typeLabel, 2);
-            grid.Children.Add(typeLabel);
-
-            _typeComboBox = new System.Windows.Controls.ComboBox { Margin = new Thickness(0, 0, 0, 10), ItemsSource = Enum.GetValues(typeof(RegistryValueKind)).Cast<RegistryValueKind>(), SelectedItem = kind };
-            System.Windows.Controls.Grid.SetRow(_typeComboBox, 2);
-            grid.Children.Add(_typeComboBox);
-
-            var buttonPanel = new System.Windows.Controls.StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            System.Windows.Controls.Grid.SetRow(buttonPanel, 3);
-
-            var okButton = new System.Windows.Controls.Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 5, 0), IsDefault = true };
-            okButton.Click += (_, _) => { DialogResult = true; };
-            buttonPanel.Children.Add(okButton);
-
-            var cancelButton = new System.Windows.Controls.Button { Content = "Отмена", Width = 80, IsCancel = true };
-            cancelButton.Click += (_, _) => { DialogResult = false; };
-            buttonPanel.Children.Add(cancelButton);
-
-            grid.Children.Add(buttonPanel);
-            Content = grid;
-        }
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

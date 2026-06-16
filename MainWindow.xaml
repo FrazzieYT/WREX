@@ -141,7 +141,7 @@
                         <ListBoxItem>
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Memory" Width="22" Height="22" VerticalAlignment="Center"/>
-                                <TextBlock Text="Диспетчер памяти" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="14"/>
+                                <TextBlock Text="Диспетчер задач" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="14"/>
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem>

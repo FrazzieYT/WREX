@@ -5,25 +5,17 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using Microsoft.Win32;
 using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class QuickCommand
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Command { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-    }
-
     public class ConsoleViewModel : INotifyPropertyChanged, IDisposable
     {
         private Process? _process;
-        private string _currentInput = "";
-        private string _output = "";
+        private string _currentInput = string.Empty;
+        private string _output = string.Empty;
         private bool _isCmd = true;
-        private bool _disposed = false;
+        private bool _disposed;
 
         public string CurrentInput
         {
@@ -49,8 +41,8 @@ namespace SystemManager.ViewModels
         }
 
         public string ShellName => _isCmd ? "CMD" : "PowerShell";
-
-        public ObservableCollection<QuickCommand> QuickCommands { get; }
+        
+        public ObservableCollection<QuickCommand> QuickCommands { get; } = new();
 
         public ICommand ExecuteCommand { get; }
         public ICommand ClearCommand { get; }
@@ -65,61 +57,47 @@ namespace SystemManager.ViewModels
             RestartCommand = new RelayCommand(_ => RestartShell());
             SaveOutputCommand = new RelayCommand(_ => SaveOutput());
             InsertCommandCommand = new RelayCommand(InsertCommand);
-
-            bool isWinRE = RegistryService.IsWinRE();
-            string offlineWindowsPath = RegistryService.DetectOfflineWindowsPath();
             
-            // Формируем пути для offline-команд в WinRE
-            string offBootDir = isWinRE && !string.IsNullOrEmpty(offlineWindowsPath) 
-                ? (System.IO.Path.GetPathRoot(offlineWindowsPath)?.TrimEnd('\\') ?? "") + "\\" 
-                : "";
-            string offWinDir = isWinRE ? offlineWindowsPath ?? "" : "";
-
+            bool isWinRe = RegistryService.IsWinRE();
+            string? offlineWindowsPath = RegistryService.DetectOfflineWindowsPath();
+            
+            string offBootDir = isWinRe && !string.IsNullOrEmpty(offlineWindowsPath) 
+                ? (Path.GetPathRoot(offlineWindowsPath)?.TrimEnd('\\') ?? string.Empty) + "\\" 
+                : string.Empty;
+            string offWinDir = isWinRe ? offlineWindowsPath ?? string.Empty : string.Empty;
+            
             QuickCommands = new ObservableCollection<QuickCommand>
             {
-                // Диагностика системы (адаптировано для WinRE)
-                new QuickCommand { 
-                    Name = "SFC Scan", 
-                    Command = isWinRE ? $"sfc /scannow /offbootdir={offBootDir} /offwindir={offWinDir}" : "sfc /scannow", 
-                    Category = "Диагностика" 
-                },
-                new QuickCommand { 
-                    Name = "DISM Restore", 
-                    Command = isWinRE ? $"DISM /Offline /Image={offWinDir} /Cleanup-Image /RestoreHealth" : "DISM /Online /Cleanup-Image /RestoreHealth", 
-                    Category = "Диагностика" 
-                },
-                new QuickCommand { Name = "Check Disk", Command = "chkdsk C: /f /r", Category = "Диагностика" },
-                new QuickCommand { Name = "System Info", Command = "systeminfo", Category = "Диагностика" },
+                new() { Name = "SFC Scan", Command = isWinRe ? $"sfc /scannow /offbootdir={offBootDir} /offwindir={offWinDir}" : "sfc /scannow", Category = "Диагностика" },
+                new() { Name = "DISM Restore", Command = isWinRe ? $"DISM /Offline /Image={offWinDir} /Cleanup-Image /RestoreHealth" : "DISM /Online /Cleanup-Image /RestoreHealth", Category = "Диагностика" },
                 
-                // Сеть
-                new QuickCommand { Name = "Flush DNS", Command = "ipconfig /flushdns", Category = "Сеть" },
-                new QuickCommand { Name = "Reset Winsock", Command = "netsh winsock reset", Category = "Сеть" },
-                new QuickCommand { Name = "Reset IP", Command = "netsh int ip reset", Category = "Сеть" },
-                new QuickCommand { Name = "IP Config", Command = "ipconfig /all", Category = "Сеть" },
-                new QuickCommand { Name = "Netstat", Command = "netstat -ano", Category = "Сеть" },
+                new() { Name = "Check Disk", Command = "chkdsk C: /f /r", Category = "Диагностика" },
+                new() { Name = "System Info", Command = "systeminfo", Category = "Диагностика" },
                 
-                // Загрузка
-                new QuickCommand { Name = "Safe Mode ON", Command = "bcdedit /set {default} safeboot minimal", Category = "Загрузка" },
-                new QuickCommand { Name = "Safe Mode OFF", Command = "bcdedit /deletevalue {default} safeboot", Category = "Загрузка" },
-                new QuickCommand { Name = "Fix MBR", Command = "bootrec /fixmbr", Category = "Загрузка" },
-                new QuickCommand { Name = "Fix Boot", Command = "bootrec /fixboot", Category = "Загрузка" },
-                new QuickCommand { Name = "Rebuild BCD", Command = "bootrec /rebuildbcd", Category = "Загрузка" },
+                new() { Name = "Flush DNS", Command = "ipconfig /flushdns", Category = "Сеть" },
+                new() { Name = "Reset Winsock", Command = "netsh winsock reset", Category = "Сеть" },
+                new() { Name = "Reset IP", Command = "netsh int ip reset", Category = "Сеть" },
+                new() { Name = "IP Config", Command = "ipconfig /all", Category = "Сеть" },
+                new() { Name = "Netstat", Command = "netstat -ano", Category = "Сеть" },
                 
-                // Процессы
-                new QuickCommand { Name = "Task List", Command = "tasklist", Category = "Процессы" },
+                new() { Name = "Safe Mode ON", Command = "bcdedit /set {default} safeboot minimal", Category = "Загрузка" },
+                new() { Name = "Safe Mode OFF", Command = "bcdedit /deletevalue {default} safeboot", Category = "Загрузка" },
+                new() { Name = "Fix MBR", Command = "bootrec /fixmbr", Category = "Загрузка" },
+                new() { Name = "Fix Boot", Command = "bootrec /fixboot", Category = "Загрузка" },
+                new() { Name = "Rebuild BCD", Command = "bootrec /rebuildbcd", Category = "Загрузка" },
+                
+                new() { Name = "Task List", Command = "tasklist", Category = "Процессы" },
             };
 
-            // Команды explorer.exe добавляем только в обычной ОС
-            if (!isWinRE)
+            if (!isWinRe)
             {
-                QuickCommands.Add(new QuickCommand { Name = "Kill Explorer", Command = "taskkill /f /im explorer.exe", Category = "Процессы" });
-                QuickCommands.Add(new QuickCommand { Name = "Start Explorer", Command = "start explorer.exe", Category = "Процессы" });
+                QuickCommands.Add(new() { Name = "Kill Explorer", Command = "taskkill /f /im explorer.exe", Category = "Процессы" });
+                QuickCommands.Add(new() { Name = "Start Explorer", Command = "start explorer.exe", Category = "Процессы" });
             }
 
-            // Система
-            QuickCommands.Add(new QuickCommand { Name = "Shutdown", Command = "shutdown /s /t 0", Category = "Система" });
-            QuickCommands.Add(new QuickCommand { Name = "Restart", Command = "shutdown /r /t 0", Category = "Система" });
-            QuickCommands.Add(new QuickCommand { Name = "Recovery Menu", Command = "shutdown /r /o /t 0", Category = "Система" });
+            QuickCommands.Add(new() { Name = "Shutdown", Command = "shutdown /s /t 0", Category = "Система" });
+            QuickCommands.Add(new() { Name = "Restart", Command = "shutdown /r /t 0", Category = "Система" });
+            QuickCommands.Add(new() { Name = "Recovery Menu", Command = "shutdown /r /o /t 0", Category = "Система" });
 
             StartShell();
         }
@@ -136,27 +114,33 @@ namespace SystemManager.ViewModels
         {
             try
             {
-                _process = new Process();
-                _process.StartInfo.FileName = _isCmd ? "cmd.exe" : "powershell.exe";
-                _process.StartInfo.Arguments = _isCmd ? "/q" : "-NoExit -NoLogo";
-                _process.StartInfo.UseShellExecute = false;
-                _process.StartInfo.RedirectStandardInput = true;
-                _process.StartInfo.RedirectStandardOutput = true;
-                _process.StartInfo.RedirectStandardError = true;
-                _process.StartInfo.CreateNoWindow = true;
+                _process = new Process
+                {
+                    StartInfo =
+                    {
+                        FileName = _isCmd ? "cmd.exe" : "powershell.exe",
+                        Arguments = _isCmd ? "/q" : "-NoExit -NoLogo",
+                        UseShellExecute = false,
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true,
+                        StandardOutputEncoding = System.Text.Encoding.GetEncoding(866),
+                        StandardErrorEncoding = System.Text.Encoding.GetEncoding(866)
+                    }
+                };
                 
                 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-                _process.StartInfo.StandardOutputEncoding = System.Text.Encoding.GetEncoding(866);
-                _process.StartInfo.StandardErrorEncoding = System.Text.Encoding.GetEncoding(866);
-        
-                _process.OutputDataReceived += (s, e) =>
+                
+                _process.OutputDataReceived += (_, e) =>
                 {
                     if (e.Data != null) AppendOutput(e.Data);
                 };
-                _process.ErrorDataReceived += (s, e) =>
+                _process.ErrorDataReceived += (_, e) =>
                 {
                     if (e.Data != null) AppendOutput($"[ОШИБКА] {e.Data}");
                 };
+                
                 _process.Start();
                 _process.BeginOutputReadLine();
                 _process.BeginErrorReadLine();
@@ -170,8 +154,10 @@ namespace SystemManager.ViewModels
 
         private void Execute()
         {
-            if (_process == null || _process.HasExited)
+            if (_process is null || _process.HasExited)
+            {
                 StartShell();
+            }
 
             var cmd = CurrentInput.Trim();
             if (string.IsNullOrEmpty(cmd)) return;
@@ -187,7 +173,7 @@ namespace SystemManager.ViewModels
             {
                 AppendOutput($"Ошибка: {ex.Message}");
             }
-            CurrentInput = "";
+            CurrentInput = string.Empty;
         }
 
         private void AppendOutput(string text)
@@ -198,18 +184,18 @@ namespace SystemManager.ViewModels
             });
         }
 
-        private void Clear() => Output = "";
+        private void Clear() => Output = string.Empty;
 
         private void RestartShell()
         {
             KillProcess();
-            Output = "";
+            Output = string.Empty;
             StartShell();
         }
 
         private void SaveOutput()
         {
-            var dialog = new SaveFileDialog
+            var dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*",
                 DefaultExt = "txt",
@@ -235,31 +221,32 @@ namespace SystemManager.ViewModels
         {
             try
             {
-                if (_process != null && !_process.HasExited)
+                if (_process is { HasExited: false })
                 {
                     _process.Kill();
                     _process.WaitForExit(1000);
                 }
             }
-            catch { }
+            catch
+            {
+                // Игнорируем
+            }
             finally
             {
                 _process?.Dispose();
                 _process = null;
             }
         }
-
+        
         public void Dispose()
         {
-            if (!_disposed)
-            {
-                KillProcess();
-                _disposed = true;
-            }
+            if (_disposed) return;
+            KillProcess();
+            _disposed = true;
         }
-
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)  
+        
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)   
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
