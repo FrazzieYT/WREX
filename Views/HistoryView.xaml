@@ -139,6 +139,8 @@
             
             <ListView.ContextMenu>
                 <ContextMenu>
+                    <MenuItem Header="📋 Копировать" Click="CopyHistoryEntry_Click"/>
+                    <Separator/>
                     <MenuItem Header="🗑️ Удалить запись"
                               Command="{Binding DeleteCommand}"
                               CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ListView}}"/>

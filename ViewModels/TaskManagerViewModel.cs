@@ -1,49 +1,50 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Timers;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class TaskManagerViewModel : INotifyPropertyChanged, IDisposable
+    public class TaskManagerViewModel : ViewModelBase, IDisposable
     {
         private ObservableCollection<ProcessItem> _processes = new();
         private ProcessItem? _selectedProcess;
-        private string _searchText = string.Empty;
-        private readonly Timer _refreshTimer;
+        private string _searchText = "";
+        private readonly System.Timers.Timer _refreshTimer;
         private bool _disposed;
+        private ObservableCollection<StartupEntry> _startupEntries = new();
+        private ObservableCollection<StartupEntry> _filteredStartupEntries = new();
+        private StartupEntry? _selectedStartupEntry;
+        private string _startupSearchText = "";
 
-        public ObservableCollection<ProcessItem> Processes
+        private static readonly HashSet<string> CriticalProcesses = new(StringComparer.OrdinalIgnoreCase)
         {
-            get => _processes;
-            set { _processes = value; OnPropertyChanged(); }
-        }
+            "System", "Registry", "smss", "csrss", "wininit", "winlogon", "services", "lsass",
+            "svchost", "dwm", "fontdrvhost", "sihost", "taskhostw", "RuntimeBroker",
+            "ShellExperienceHost", "StartMenuExperienceHost", "ctfmon", "conhost",
+            "spoolsv", "WmiPrvSE", "SearchIndexer", "dllhost", "msdtc",
+            "SecurityHealthService", "MsMpEng", "NisSrv", "WUDFHost", "WerFault",
+            "ntoskrnl", "mcupdate", "Classpnp", "disk", "partmgr", "volmgr",
+            "mountmgr", "intelppm", "ACPI", "Wdf01000", "mssmbios",
+            "Tcpip", "Afd", "NetBT", "nsiproxy", "mpsdrv", "tdx",
+            "wfplwfs", "pacer", "mouclass", "kbdclass", "mouhid", "kbdhid",
+            "Null", "Beep", "RDPCDD", "RDPDR", "RDPWD", "RasMan",
+            "SstpSvc", "NetBIOS", "MrxSmb", "mrxsmb10", "mrxsmb20",
+            "bowser", "WfpLwf", "Dnscache", "Dhcp", "EventLog", "Spooler",
+            "Sysmon", "WdNisDrv", "WdNisSvc", "WdFilter", "BFE", "mpssvc"
+        };
 
-        public ProcessItem? SelectedProcess
-        {
-            get => _selectedProcess;
-            set 
-            { 
-                _selectedProcess = value; 
-                OnPropertyChanged(); 
-            }
-        }
-
-        public string SearchText
-        {
-            get => _searchText;
-            set
-            {
-                _searchText = value;
-                OnPropertyChanged();
-                RefreshProcesses();
-            }
-        }
+        public ObservableCollection<ProcessItem> Processes { get => _processes; set => SetProperty(ref _processes, value); }
+        public ProcessItem? SelectedProcess { get => _selectedProcess; set => SetProperty(ref _selectedProcess, value); }
+        public string SearchText { get => _searchText; set { _searchText = value; OnPropertyChanged(); _ = RefreshProcessesAsync(); } }
+        public ObservableCollection<StartupEntry> StartupEntries { get => _filteredStartupEntries; set => SetProperty(ref _filteredStartupEntries, value); }
+        public StartupEntry? SelectedStartupEntry { get => _selectedStartupEntry; set => SetProperty(ref _selectedStartupEntry, value); }
+        public string StartupSearchText { get => _startupSearchText; set { _startupSearchText = value; OnPropertyChanged(); ApplyStartupFilter(); } }
 
         public ICommand RefreshCommand { get; }
         public ICommand KillCommand { get; }
@@ -51,174 +52,127 @@ namespace SystemManager.ViewModels
         public ICommand OpenFileLocationCommand { get; }
         public ICommand ShowPropertiesCommand { get; }
         public ICommand CopyProcessNameCommand { get; }
+        public ICommand RefreshStartupCommand { get; }
+        public ICommand DeleteStartupEntryCommand { get; }
 
         public TaskManagerViewModel()
         {
-            RefreshCommand = new RelayCommand(_ => RefreshProcesses());
+            RefreshCommand = new RelayCommand(async _ => await RefreshProcessesAsync());
             KillCommand = new RelayCommand(_ => KillProcess(), _ => SelectedProcess != null);
-            
             RestartProcessCommand = new RelayCommand(RestartProcess);
             OpenFileLocationCommand = new RelayCommand(OpenFileLocation);
             ShowPropertiesCommand = new RelayCommand(ShowProperties);
             CopyProcessNameCommand = new RelayCommand(CopyProcessName);
-            
-            RefreshProcesses();
+            RefreshStartupCommand = new RelayCommand(_ => LoadStartupEntries());
+            DeleteStartupEntryCommand = new RelayCommand(_ => DeleteStartupEntry(), _ => SelectedStartupEntry != null);
 
-            _refreshTimer = new Timer(3000);
-            _refreshTimer.Elapsed += (_, _) => 
-                System.Windows.Application.Current?.Dispatcher?.Invoke(RefreshProcesses);
+            _ = RefreshProcessesAsync();
+            LoadStartupEntries();
+            _refreshTimer = new System.Timers.Timer(3000);
+            _refreshTimer.Elapsed += async (_, _) => await System.Windows.Application.Current?.Dispatcher?.InvokeAsync(RefreshProcessesAsync)!;
             _refreshTimer.Start();
         }
 
-        private static string GetFullPath(Process p)
+        private static bool IsCritical(string name, string path)
         {
-            try { return p.MainModule?.FileName ?? string.Empty; } 
-            catch { return string.Empty; }
-        }
-        
-        private static string GetDescription(Process p)
-        {
-            try { return p.MainWindowTitle; } 
-            catch { return string.Empty; }
-        }
-
-        private static string GetStartTime(Process p)
-        {
-            try { return p.StartTime.ToString("HH:mm:ss"); } 
-            catch { return "N/A"; }
-        }
-
-        private void RestartProcess(object? parameter)
-        {
-            if (parameter is not ProcessItem process || string.IsNullOrEmpty(process.FullPath)) return;
-
+            if (CriticalProcesses.Contains(name)) return true;
+            if (!string.IsNullOrEmpty(path) && path.StartsWith(Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase)) return true;
             try
             {
-                var proc = Process.GetProcessById(process.Id);
-                proc.Kill();
-                proc.WaitForExit(1000);
-                
-                SystemLauncher.Launch(process.FullPath);
-                
-                HistoryService.Log("Перезапуск процесса", $"Имя: {process.Name}, PID: {process.Id}", "TaskManager");
-                RefreshProcesses();
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Не удалось перезапустить: {ex.Message}", "Ошибка");
-            }
+                var ver = FileVersionInfo.GetVersionInfo(path);
+                if (!string.IsNullOrEmpty(ver.CompanyName) && ver.CompanyName.Contains("Microsoft", StringComparison.OrdinalIgnoreCase)) return true;
+            } catch { }
+            return false;
         }
-        
-        private void OpenFileLocation(object? parameter)
-        {
-            if (parameter is not ProcessItem process || string.IsNullOrEmpty(process.FullPath)) return;
 
-            try
-            {
-                SystemLauncher.Launch("explorer.exe", $"/select,\"{process.FullPath}\"");
-                HistoryService.Log("Открыто расположение файла", process.FullPath, "TaskManager");
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Не удалось открыть: {ex.Message}", "Ошибка");
-            }
-        }
-        
-        private void ShowProperties(object? parameter)
-        {
-            if (parameter is not ProcessItem process) return;
-            
-            var info = $"Имя: {process.Name}\n" +
-                       $"Описание: {process.Description}\n" +
-                       $"PID: {process.Id}\n" +
-                       $"Память: {process.MemoryMb} МБ\n" +
-                       $"Потоки: {process.Threads}\n" +
-                       $"Путь: {process.FullPath}";
-            
-            System.Windows.MessageBox.Show(info, $"Свойства: {process.Name}", 
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-        }
-        
-        private void CopyProcessName(object? parameter)
-        {
-            if (parameter is not ProcessItem process) return;
-
-            System.Windows.Clipboard.SetText(process.Name);
-            HistoryService.Log("Скопировано имя процесса", process.Name, "TaskManager");
-        }
-        
-        private void RefreshProcesses()
+        private async Task RefreshProcessesAsync()
         {
             try
             {
-                var query = Process.GetProcesses()
-                    .Where(p => string.IsNullOrWhiteSpace(SearchText) || 
-                                p.ProcessName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-                    .OrderByDescending(p => { try { return p.WorkingSet64; } catch { return 0L; } })
-                    .Select(p =>
-                    {
-                        try
+                var list = await Task.Run(() =>
+                {
+                    return Process.GetProcesses()
+                        .Where(p => string.IsNullOrWhiteSpace(SearchText) || p.ProcessName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                        .OrderByDescending(p => { try { return p.WorkingSet64; } catch { return 0L; } })
+                        .Select(p =>
                         {
-                            return new ProcessItem
+                            try
                             {
-                                Id = p.Id,
-                                Name = p.ProcessName,
-                                Description = GetDescription(p),
-                                MemoryMb = p.WorkingSet64 / 1024 / 1024,
-                                Threads = p.Threads.Count,
-                                StartTime = GetStartTime(p),
-                                FullPath = GetFullPath(p)
-                            };
-                        }
-                        catch
-                        {
-                            return null;
-                        }
-                    })
-                    .OfType<ProcessItem>()
-                    .ToList();
+                                string path = ""; try { path = p.MainModule?.FileName ?? ""; } catch { }
+                                return new ProcessItem
+                                {
+                                    Id = p.Id, Name = p.ProcessName,
+                                    Description = "", MemoryMb = p.WorkingSet64 / 1024 / 1024,
+                                    Threads = p.Threads.Count, StartTime = "", FullPath = path,
+                                    IsCritical = IsCritical(p.ProcessName, path)
+                                };
+                            } catch { return null; }
+                        })
+                        .OfType<ProcessItem>().ToList();
+                });
+                Processes = new ObservableCollection<ProcessItem>(list);
+            } catch { }
+        }
 
-                Processes = new ObservableCollection<ProcessItem>(query);
-            }
-            catch
-            {
-                // Игнорируем
-            }
+        private void RestartProcess(object? param)
+        {
+            if (param is not ProcessItem proc || string.IsNullOrEmpty(proc.FullPath)) return;
+            try { var p = Process.GetProcessById(proc.Id); p.Kill(); p.WaitForExit(1000); SystemLauncher.Launch(proc.FullPath); _ = RefreshProcessesAsync(); }
+            catch (Exception ex) { System.Windows.MessageBox.Show($"Ошибка: {ex.Message}"); }
+        }
+
+        private void OpenFileLocation(object? param)
+        {
+            if (param is not ProcessItem proc || string.IsNullOrEmpty(proc.FullPath)) return;
+            SystemLauncher.Launch("explorer.exe", $"/select,\"{proc.FullPath}\"");
+        }
+
+        private void ShowProperties(object? param)
+        {
+            if (param is not ProcessItem proc) return;
+            System.Windows.MessageBox.Show($"Имя: {proc.Name}\nPID: {proc.Id}\nПамять: {proc.MemoryMb} МБ\nПотоки: {proc.Threads}\nПуть: {proc.FullPath}\nСтатус: {(proc.IsCritical ? "🔴 Системный" : "⚪ Обычный")}", $"Свойства: {proc.Name}");
+        }
+
+        private void CopyProcessName(object? param)
+        {
+            if (param is not ProcessItem proc) return;
+            System.Windows.Clipboard.SetText(proc.Name);
         }
 
         private void KillProcess()
-        { 
-            if (SelectedProcess == null) return;
-
-            try
-            {
-                var process = Process.GetProcessById(SelectedProcess.Id);
-                var name = process.ProcessName;
-                process.Kill();
-                
-                HistoryService.Log("Завершён процесс", $"PID: {SelectedProcess.Id}, Имя: {name}", "Process");
-                RefreshProcesses();
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(
-                    $"Не удалось завершить процесс {SelectedProcess.Name}:\n{ex.Message}",
-                    "Ошибка",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Warning);
-            }
-        }
-
-        public void Dispose()
         {
-            if (_disposed) return;
-            _refreshTimer?.Dispose();
-            _disposed = true;
+            if (SelectedProcess == null) return;
+            if (SelectedProcess.IsCritical) { System.Windows.MessageBox.Show("Нельзя завершить системный процесс!", "Внимание"); return; }
+            try { Process.GetProcessById(SelectedProcess.Id).Kill(); _ = RefreshProcessesAsync(); }
+            catch (Exception ex) { System.Windows.MessageBox.Show($"Ошибка: {ex.Message}"); }
         }
-        
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        public event PropertyChangedEventHandler? PropertyChanged;
+        private void LoadStartupEntries()
+        {
+            _startupEntries = new ObservableCollection<StartupEntry>(StartupManager.GetAllStartupEntries());
+            ApplyStartupFilter();
+        }
+
+        private void ApplyStartupFilter()
+        {
+            StartupEntries = string.IsNullOrWhiteSpace(_startupSearchText)
+                ? new ObservableCollection<StartupEntry>(_startupEntries)
+                : new ObservableCollection<StartupEntry>(_startupEntries.Where(e =>
+                    e.Name.Contains(_startupSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    e.Command.Contains(_startupSearchText, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private void DeleteStartupEntry()
+        {
+            if (SelectedStartupEntry == null) return;
+            if (System.Windows.MessageBox.Show($"Удалить '{SelectedStartupEntry.Name}' из автозагрузки?",
+                "Подтверждение", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+            {
+                StartupManager.DeleteStartupEntry(SelectedStartupEntry);
+                LoadStartupEntries();
+            }
+        }
+
+        public void Dispose() { if (!_disposed) { _refreshTimer?.Dispose(); _disposed = true; } }
     }
 }

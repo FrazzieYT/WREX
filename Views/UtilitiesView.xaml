@@ -59,6 +59,131 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- Точки восстановления -->
+            <TextBlock Text="Точки восстановления системы" FontSize="18" FontWeight="SemiBold" 
+                       Foreground="{StaticResource TextPrimary}" Margin="0,30,0,10"/>
+            <TextBlock Text="Управление точками восстановления Windows" 
+                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Button Content="🔄 Обновить" 
+                        Command="{Binding RefreshRestorePointsCommand}"
+                        Padding="15,8" Margin="0,0,10,0"
+                        Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}"
+                        BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="➕ Создать точку" 
+                        Command="{Binding CreateRestorePointCommand}"
+                        Padding="15,8"
+                        Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}"
+                        BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+            </StackPanel>
+
+            <ListView ItemsSource="{Binding RestorePoints}" 
+                      Background="{StaticResource CardBackground}"
+                      Foreground="{StaticResource TextPrimary}"
+                      BorderBrush="{StaticResource CardBorder}"
+                      BorderThickness="1"
+                      MaxHeight="300">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="#" Width="50" DisplayMemberBinding="{Binding SequenceNumber}"/>
+                        <GridViewColumn Header="Описание" Width="250" DisplayMemberBinding="{Binding Description}"/>
+                        <GridViewColumn Header="Дата" Width="150" DisplayMemberBinding="{Binding FormattedTime}"/>
+                        <GridViewColumn Header="Тип" Width="180" DisplayMemberBinding="{Binding TypeDisplay}"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <!-- Трекинг установки -->
+            <TextBlock Text="Трекинг установки ПО" FontSize="18" FontWeight="SemiBold" 
+                       Foreground="{StaticResource TextPrimary}" Margin="0,30,0,10"/>
+            <TextBlock Text="Мониторинг изменений файлов и реестра во время установки программ" 
+                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
+
+            <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="15" 
+                    BorderBrush="{StaticResource CardBorder}" BorderThickness="1" Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="📡" FontSize="24" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Мониторинг файловой системы и реестра" FontSize="14"
+                                   Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Запустите перед установкой программы для отслеживания всех изменений" FontSize="11"
+                                   Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel Orientation="Horizontal">
+                <Button Content="▶️ Начать трекинг" 
+                        Command="{Binding StartTrackingCommand}"
+                        Padding="15,8" Margin="0,0,10,0"
+                        Background="#107C10"
+                        Foreground="White"/>
+                <Button Content="⏹ Остановить" 
+                        Command="{Binding StopTrackingCommand}"
+                        Padding="15,8"
+                        Background="#C50F1F"
+                        Foreground="White"/>
+            </StackPanel>
+
+            <!-- Восстановление Windows -->
+            <TextBlock Text="Восстановление Windows" FontSize="18" FontWeight="SemiBold" 
+                       Foreground="{StaticResource TextPrimary}" Margin="0,30,0,10"/>
+            <TextBlock Text="Инструменты для восстановления системы после вирусов и сбоев" 
+                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
+
+            <WrapPanel>
+                <Button Content="🔒 Включить UAC" Command="{Binding EnableUACCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="🔓 Отключить UAC" Command="{Binding DisableUACCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="📋 Диспетчер задач" Command="{Binding EnableTaskManagerCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="🔧 Реестр" Command="{Binding EnableRegistryEditorCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="💻 CMD" Command="{Binding EnableCMDCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="⚙️ Панель управления" Command="{Binding EnableControlPanelCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="👁️ Скрытые файлы" Command="{Binding ShowHiddenFilesCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="📄 Расширения" Command="{Binding ShowExtensionsCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="🛡️ Defender" Command="{Binding ResetDefenderCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="🔥 Брандмауэр" Command="{Binding ResetFirewallCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="🩺 Восстановление" Command="{Binding RepairWindowsCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+                <Button Content="📝 Hosts" Command="{Binding ResetHostsCommand}"
+                        Padding="15,8" Margin="5" Background="{StaticResource CardBackground}"
+                        Foreground="{StaticResource TextPrimary}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"/>
+            </WrapPanel>
+
+            <!-- Экспорт системной информации -->
+            <TextBlock Text="Экспорт информации" FontSize="18" FontWeight="SemiBold" 
+                       Foreground="{StaticResource TextPrimary}" Margin="0,30,0,10"/>
+            <Button Content="📄 Экспорт системной информации" Command="{Binding ExportSystemInfoCommand}"
+                    Padding="15,8" Background="{StaticResource AccentColor}"
+                    Foreground="White"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

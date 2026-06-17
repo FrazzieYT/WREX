@@ -1,13 +1,11 @@
 using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class CleanupViewModel : INotifyPropertyChanged
+    public class CleanupViewModel : ViewModelBase
     {
         private bool _isProcessing;
         private string _lastResult = "";
@@ -16,50 +14,14 @@ namespace SystemManager.ViewModels
         private long _totalFreedBytes;
         private string _statusMessage = "Готов к очистке";
 
-        public bool IsProcessing
-        {
-            get => _isProcessing;
-            set { _isProcessing = value; OnPropertyChanged(); }
-        }
-
+        public bool IsProcessing { get => _isProcessing; set => SetProperty(ref _isProcessing, value); }
         public bool HasResult => !string.IsNullOrEmpty(_lastResult);
-
-        public string LastResult
-        {
-            get => _lastResult;
-            set 
-            { 
-                _lastResult = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(HasResult));
-            }
-        }
-
-        public int TotalDeletedFiles
-        {
-            get => _totalDeletedFiles;
-            set { _totalDeletedFiles = value; OnPropertyChanged(); }
-        }
-
-        public int TotalDeletedDirectories
-        {
-            get => _totalDeletedDirectories;
-            set { _totalDeletedDirectories = value; OnPropertyChanged(); }
-        }
-
-        public long TotalFreedBytes
-        {
-            get => _totalFreedBytes;
-            set { _totalFreedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(FormattedFreedBytes)); }
-        }
-
-        public string FormattedFreedBytes => FormatSize(TotalFreedBytes);
-
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
+        public string LastResult { get => _lastResult; set { _lastResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasResult)); } }
+        public int TotalDeletedFiles { get => _totalDeletedFiles; set => SetProperty(ref _totalDeletedFiles, value); }
+        public int TotalDeletedDirectories { get => _totalDeletedDirectories; set => SetProperty(ref _totalDeletedDirectories, value); }
+        public long TotalFreedBytes { get => _totalFreedBytes; set { _totalFreedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(FormattedFreedBytes)); } }
+        public string FormattedFreedBytes => FormatUtils.FormatSizeRu(TotalFreedBytes);
+        public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
         public ICommand CleanTempCommand { get; }
         public ICommand CleanPrefetchCommand { get; }
@@ -69,110 +31,37 @@ namespace SystemManager.ViewModels
 
         public CleanupViewModel()
         {
-            CleanTempCommand = new RelayCommand(async _ => 
-            {
-                try { await ExecuteCleanupAsync("temp", CleanupService.CleanTemp); } 
-                catch (Exception ex) { StatusMessage = $"Ошибка: {ex.Message}"; }
-            });
-            
-            CleanPrefetchCommand = new RelayCommand(async _ => 
-            {
-                try { await ExecuteCleanupAsync("prefetch", CleanupService.CleanPrefetch); } 
-                catch (Exception ex) { StatusMessage = $"Ошибка: {ex.Message}"; }
-            });
-            
-            CleanRecentCommand = new RelayCommand(async _ => 
-            {
-                try { await ExecuteCleanupAsync("recent", CleanupService.CleanRecent); } 
-                catch (Exception ex) { StatusMessage = $"Ошибка: {ex.Message}"; }
-            });
-            
-            CleanWindowsTempCommand = new RelayCommand(async _ => 
-            {
-                try { await ExecuteCleanupAsync("windows_temp", CleanupService.CleanWindowsTemp); } 
-                catch (Exception ex) { StatusMessage = $"Ошибка: {ex.Message}"; }
-            });
-            
-            FullCleanupCommand = new RelayCommand(async _ => 
-            {
-                try { await ExecuteFullCleanupAsync(); } 
-                catch (Exception ex) { StatusMessage = $"Ошибка: {ex.Message}"; }
-            });
+            CleanTempCommand = new RelayCommand(async _ => await RunCleanupAsync("temp", CleanupService.CleanTemp));
+            CleanPrefetchCommand = new RelayCommand(async _ => await RunCleanupAsync("prefetch", CleanupService.CleanPrefetch));
+            CleanRecentCommand = new RelayCommand(async _ => await RunCleanupAsync("recent", CleanupService.CleanRecent));
+            CleanWindowsTempCommand = new RelayCommand(async _ => await RunCleanupAsync("windows_temp", CleanupService.CleanWindowsTemp));
+            FullCleanupCommand = new RelayCommand(async _ => await RunFullCleanupAsync());
         }
 
-        private async Task ExecuteCleanupAsync(string operationName, Func<CleanupResult> cleanupFunc)
+        private async Task RunCleanupAsync(string name, Func<CleanupResult> cleanupFunc)
         {
             if (IsProcessing) return;
-
-            IsProcessing = true;
-            StatusMessage = $"Выполняется очистка: {operationName}...";
-            
+            IsProcessing = true; StatusMessage = $"Очистка: {name}...";
             try
             {
                 var result = await Task.Run(cleanupFunc);
-                
-                TotalDeletedFiles += result.DeletedFiles;
-                TotalDeletedDirectories += result.DeletedDirectories;
-                TotalFreedBytes += result.FreedBytes;
-                
-                LastResult = $"✓ {result.OperationName} завершена\n" +
-                           $"Удалено файлов: {result.DeletedFiles}\n" +
-                           $"Удалено папок: {result.DeletedDirectories}\n" +
-                           $"Освобождено: {FormatSize(result.FreedBytes)}\n" +
-                           $"Пропущено: {result.SkippedItems}";
-                
-                StatusMessage = $"Очистка {operationName} завершена";
+                TotalDeletedFiles += result.DeletedFiles; TotalDeletedDirectories += result.DeletedDirectories; TotalFreedBytes += result.FreedBytes;
+                LastResult = $"✓ {result.OperationName}\nУдалено файлов: {result.DeletedFiles}\nУдалено папок: {result.DeletedDirectories}\nОсвобождено: {FormatUtils.FormatSizeRu(result.FreedBytes)}";
             }
-            finally
-            {
-                IsProcessing = false;
-            }
+            finally { IsProcessing = false; }
         }
 
-        private async Task ExecuteFullCleanupAsync()
+        private async Task RunFullCleanupAsync()
         {
             if (IsProcessing) return;
-
-            IsProcessing = true;
-            StatusMessage = "Выполняется полная очистка системы...";
-            
+            IsProcessing = true; StatusMessage = "Полная очистка...";
             try
             {
                 var result = await Task.Run(CleanupService.RunFullCleanup);
-                
-                TotalDeletedFiles = result.DeletedFiles;
-                TotalDeletedDirectories = result.DeletedDirectories;
-                TotalFreedBytes = result.FreedBytes;
-                
-                LastResult = $"✓ Полная очистка завершена\n" +
-                           $"Всего удалено файлов: {result.DeletedFiles}\n" +
-                           $"Всего удалено папок: {result.DeletedDirectories}\n" +
-                           $"Всего освобождено: {FormatSize(result.FreedBytes)}\n" +
-                           $"Пропущено: {result.SkippedItems}";
-                
-                StatusMessage = "Полная очистка завершена успешно";
+                TotalDeletedFiles = result.DeletedFiles; TotalDeletedDirectories = result.DeletedDirectories; TotalFreedBytes = result.FreedBytes;
+                LastResult = $"✓ Полная очистка\nВсего: {result.DeletedFiles} файлов, {result.DeletedDirectories} папок\nОсвобождено: {FormatUtils.FormatSizeRu(result.FreedBytes)}";
             }
-            finally
-            {
-                IsProcessing = false;
-            }
+            finally { IsProcessing = false; }
         }
-
-        private string FormatSize(long bytes)
-        {
-            string[] sizes = { "Б", "КБ", "МБ", "ГБ", "ТБ" };
-            int order = 0;
-            double size = bytes;
-            while (size >= 1024 && order < sizes.Length - 1)
-            {
-                order++;
-                size /= 1024;
-            }
-            return $"{size:0.##} {sizes[order]}";
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

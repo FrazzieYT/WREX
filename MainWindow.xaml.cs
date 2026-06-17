@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using SystemManager.Services;
 
 namespace SystemManager
 {
@@ -48,19 +49,18 @@ namespace SystemManager
         {
             _isAlwaysOnTop = !_isAlwaysOnTop;
             this.Topmost = _isAlwaysOnTop;
-            
+
             SettingsPopup.IsOpen = false;
-            
-            var viewModel = DataContext as ViewModels.MainViewModel;
+
             if (DataContext is ViewModels.MainViewModel vm)
             {
                 vm.IsTopmost = !vm.IsTopmost;
-                
+
                 this.Topmost = vm.IsTopmost;
-                vm.StatusMessage = vm.IsTopmost ? 
-                    "Режим «Поверх всех окон» включен" : 
+                vm.StatusMessage = vm.IsTopmost ?
+                    "Режим «Поверх всех окон» включен" :
                     "Режим «Поверх всех окон» выключен";
-        
+
                 vm.CurrentStatus = ViewModels.OperationStatus.Ready;
             }
         }
@@ -68,7 +68,7 @@ namespace SystemManager
         private async void CheckUpdateButton_Click(object sender, RoutedEventArgs e)
         {
             SettingsPopup.IsOpen = false;
-            
+
             var viewModel = DataContext as ViewModels.MainViewModel;
             if (viewModel != null)
             {
@@ -80,15 +80,15 @@ namespace SystemManager
             {
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("WREX-App");
-                
+
                 var response = await client.GetStringAsync("https://api.github.com/repos/FrazzieYT/WREX/releases/latest");
                 var json = JsonDocument.Parse(response);
-                
+
                 if (json.RootElement.TryGetProperty("tag_name", out var tagName))
                 {
                     string latestVersion = tagName.GetString() ?? "неизвестно";
                     string currentVersion = "1.0.0";
-                    
+
                     if (string.Compare(latestVersion, currentVersion, StringComparison.OrdinalIgnoreCase) > 0)
                     {
                         var result = MessageBox.Show(
@@ -96,7 +96,7 @@ namespace SystemManager
                             "Обновление доступно",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Information);
-                        
+
                         if (result == MessageBoxResult.Yes)
                         {
                             if (json.RootElement.TryGetProperty("html_url", out var htmlUrl))
@@ -112,7 +112,7 @@ namespace SystemManager
                                 }
                             }
                         }
-                        
+
                         if (viewModel != null)
                         {
                             viewModel.StatusMessage = $"Найдена новая версия: {latestVersion}";
@@ -126,7 +126,7 @@ namespace SystemManager
                             "Обновления не требуются",
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
-                        
+
                         if (viewModel != null)
                         {
                             viewModel.StatusMessage = "Установлена актуальная версия";
@@ -142,13 +142,31 @@ namespace SystemManager
                     "Ошибка",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
-                
+
                 if (viewModel != null)
                 {
                     viewModel.StatusMessage = "Ошибка проверки обновлений";
                     viewModel.CurrentStatus = ViewModels.OperationStatus.Error;
                 }
             }
+        }
+
+        private void StartupButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsPopup.IsOpen = false;
+
+            StartupService.Toggle();
+            bool isEnabled = StartupService.IsEnabled();
+
+            if (DataContext is ViewModels.MainViewModel vm)
+            {
+                vm.StatusMessage = isEnabled
+                    ? "Добавлено в автозагрузку"
+                    : "Удалено из автозагрузки";
+                vm.CurrentStatus = ViewModels.OperationStatus.Completed;
+            }
+
+            TrayIconService.UpdateTooltip();
         }
     }
 }

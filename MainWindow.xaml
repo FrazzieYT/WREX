@@ -48,6 +48,9 @@
         <DataTemplate DataType="{x:Type vm:CleanupViewModel}">
             <v:CleanupView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ServiceManagerViewModel}">
+            <v:ServiceManagerView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
@@ -175,6 +178,12 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Broom" Width="22" Height="22" VerticalAlignment="Center"/>
                                 <TextBlock Text="Очистка" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="14"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Cog" Width="22" Height="22" VerticalAlignment="Center"/>
+                                <TextBlock Text="Службы" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="14"/>
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem>
@@ -376,6 +385,45 @@
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="🔄" FontSize="16" VerticalAlignment="Center"/>
                                                     <TextBlock Text=" Проверить обновление" 
+                                                               Foreground="White" 
+                                                               FontSize="13"
+                                                               VerticalAlignment="Center"
+                                                               Margin="8,0,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="Background" Value="#3E3E42"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <Separator Background="#3E3E42" Margin="5,2"/>
+
+                    <Button x:Name="StartupButton"
+                            Click="StartupButton_Click"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            HorizontalContentAlignment="Left"
+                            Padding="10,8"
+                            Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="border" 
+                                                    Background="Transparent"
+                                                    CornerRadius="4"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock x:Name="StartupIcon" Text="🚀" FontSize="16" VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="StartupLabel" Text=" Добавить в автозагрузку" 
                                                                Foreground="White" 
                                                                FontSize="13"
                                                                VerticalAlignment="Center"

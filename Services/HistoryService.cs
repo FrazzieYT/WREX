@@ -10,6 +10,10 @@ namespace SystemManager.Services
     public static class HistoryService
     {
         private static readonly string HistoryFilePath = GetHistoryFilePath();
+        private static readonly HashSet<string> WrexCategories = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "System", "Navigation", "Utility", "Console", "TaskManager", "Cleanup"
+        };
 
         private static string GetHistoryFilePath()
         {
@@ -65,6 +69,11 @@ namespace SystemManager.Services
 
                 Save();
             }
+        }
+
+        public static void LogExternalChange(string action, string details, string category = "Monitor")
+        {
+            Log(action, details, category);
         }
 
         public static void LogFileCreation(string filePath, string category = "File")

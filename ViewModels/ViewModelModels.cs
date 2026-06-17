@@ -1,6 +1,3 @@
-﻿using System.ComponentModel;
-using System.Runtime.CompilerServices;
-
 namespace SystemManager.ViewModels
 {
     public class FileSystemItem
@@ -9,11 +6,13 @@ namespace SystemManager.ViewModels
         public string FullPath { get; set; } = "";
         public string Icon { get; set; } = "";
         public bool IsDirectory { get; set; }
+        public bool IsArchive { get; set; }
         public string FormattedSize { get; set; } = "";
         public long FileSize { get; set; }
+        public string? ArchiveParentPath { get; set; }
     }
 
-    public class ProcessItem : INotifyPropertyChanged
+    public class ProcessItem
     {
         public int Id { get; set; }
         public string Name { get; set; } = "";
@@ -22,10 +21,9 @@ namespace SystemManager.ViewModels
         public string StartTime { get; set; } = "";
         public string FullPath { get; set; } = "";
         public long MemoryMb { get; set; }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        public bool IsCritical { get; set; }
+        public string StatusIcon => IsCritical ? "🔴" : "⚪";
+        public string StatusText => IsCritical ? "Системный" : "Обычный";
     }
 
     public class UtilityItem
@@ -38,9 +36,9 @@ namespace SystemManager.ViewModels
 
     public class QuickCommand
     {
-        public string Name { get; set; } = string.Empty;
-        public string Command { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
+        public string Name { get; set; } = "";
+        public string Command { get; set; } = "";
+        public string Category { get; set; } = "";
     }
 
     public class DriveInfoItem

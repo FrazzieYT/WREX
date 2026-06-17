@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -16,6 +16,8 @@ namespace SystemManager.Services
         private static readonly HashSet<string> _watchedAccessFiles = new(StringComparer.OrdinalIgnoreCase);
         private static bool _isRunning = false;
         private static readonly object _lock = new();
+
+        public static bool IsMonitoring => _isRunning;
         private static Timer? _cleanupTimer;
 
         static FileMonitorService()
@@ -209,18 +211,7 @@ namespace SystemManager.Services
                 if ((DateTime.Now - time).TotalSeconds < 5) return true;
             }
             
-            if (lowerPath.Contains("\\windows\\temp\\") || 
-                lowerPath.Contains("\\windows\\prefetch\\") ||
-                lowerPath.Contains("\\inetpub\\logs\\") ||
-                lowerPath.Contains("\\$recycle.bin\\") ||
-                lowerPath.Contains("\\system volume information\\") ||
-                lowerPath.EndsWith("\\ntuser.dat") ||
-                lowerPath.Contains("\\appdata\\local\\microsoft\\windows\\explorer\\thumbcache_"))
-            {
-                return true;
-            }
-
-            return false;
+            return FormatUtils.ShouldIgnorePath(path);
         }
 
         private static bool IsWatchedAccessFile(string path)

@@ -71,6 +71,51 @@
                 </Grid>
             </Border>
 
+            <!-- Статус мониторинга -->
+            <TextBlock Text="Статус системы" FontSize="18" FontWeight="SemiBold" 
+                       Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>
+            <Border Background="{StaticResource CardBackground}"
+                    CornerRadius="8" Padding="20" Margin="0,0,0,25"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <TextBlock Text="Мониторинг файлов" 
+                                   Foreground="{StaticResource TextSecondary}" 
+                                   FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding FileMonitoringStatus}" 
+                                   FontSize="15" FontWeight="Bold" 
+                                   Foreground="{StaticResource TextPrimary}" 
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="Мониторинг реестра" 
+                                   Foreground="{StaticResource TextSecondary}" 
+                                   FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding RegistryMonitoringStatus}" 
+                                   FontSize="15" FontWeight="Bold" 
+                                   Foreground="{StaticResource TextPrimary}" 
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                        <TextBlock Text="Автозагрузка" 
+                                   Foreground="{StaticResource TextSecondary}" 
+                                   FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding StartupStatus}" 
+                                   FontSize="15" FontWeight="Bold" 
+                                   Foreground="{StaticResource TextPrimary}" 
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!-- Диски -->
             <TextBlock Text="Дисковое пространство" FontSize="18" FontWeight="SemiBold" 
                        Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>

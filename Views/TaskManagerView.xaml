@@ -1,7 +1,7 @@
-﻿<UserControl x:Class="SystemManager.Views.TaskManagerView"
+<UserControl x:Class="SystemManager.Views.TaskManagerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+             xmlns:vm="clr-namespace:SystemManager.ViewModels">
     <UserControl.Resources>
         <SolidColorBrush x:Key="CardBackground" Color="#2D2D30"/>
         <SolidColorBrush x:Key="AccentColor" Color="#0078D4"/>
@@ -9,75 +9,116 @@
         <SolidColorBrush x:Key="TextSecondary" Color="#CCCCCC"/>
         <SolidColorBrush x:Key="BorderBrush" Color="#3E3E42"/>
     </UserControl.Resources>
-    
+
     <Grid Background="#1E1E1E" Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Text="Диспетчер задач" FontSize="24" FontWeight="Bold"
-                   Foreground="{StaticResource TextPrimary}" Margin="0,0,0,20"/>
+                   Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>
 
-        <!-- Поиск и кнопки -->
-        <Grid Grid.Row="1" Margin="0,0,0,15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <TextBox Grid.Column="0" 
-                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     Background="{StaticResource CardBackground}"
-                     Foreground="{StaticResource TextPrimary}"
-                     Padding="10,8"
-                     FontSize="14"/>
-            
-            <Button Grid.Column="1" Content="🔄 Обновить" 
-                    Command="{Binding RefreshCommand}"
-                    Margin="10,0,0,0" Padding="15,8"
-                    Background="{StaticResource AccentColor}"
-                    Foreground="White"/>
-            
-            <Button Grid.Column="2" Content="⛔ Завершить процесс" 
-                    Command="{Binding KillCommand}"
-                    Margin="10,0,0,0" Padding="15,8"
-                    Background="#D42B2B"
-                    Foreground="White"/>
-        </Grid>
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <!-- Процессы -->
+            <TabItem Header="Процессы" Background="#2D2D30" Foreground="#CCCCCC">
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-        <!-- Таблица процессов -->
-        <DataGrid Grid.Row="2" 
-                  ItemsSource="{Binding Processes}"
-                  SelectedItem="{Binding SelectedProcess}"
-                  ContextMenu="{StaticResource TaskManagerContextMenu}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  CanUserAddRows="False"
-                  Background="{StaticResource CardBackground}"
-                  Foreground="{StaticResource TextPrimary}"
-                  RowBackground="{StaticResource CardBackground}"
-                  AlternatingRowBackground="#333337"
-                  BorderBrush="{StaticResource BorderBrush}"
-                  GridLinesVisibility="Horizontal"
-                  HeadersVisibility="Column">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="PID" Binding="{Binding Id}" Width="80"/>
-                <DataGridTextColumn Header="Имя процесса" Binding="{Binding Name}" Width="200"/>
-                <DataGridTextColumn Header="Память (МБ)" Binding="{Binding MemoryMB}" Width="120"/>
-                <DataGridTextColumn Header="Потоки" Binding="{Binding Threads}" Width="80"/>
-                <DataGridTextColumn Header="Время запуска" Binding="{Binding StartTime}" Width="*"/>
-            </DataGrid.Columns>
-        </DataGrid>
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="{StaticResource CardBackground}"
+                                 Foreground="{StaticResource TextPrimary}"
+                                 Padding="10,8" FontSize="14"/>
+                        <Button Grid.Column="1" Content="🔄" Command="{Binding RefreshCommand}"
+                                Margin="10,0,0,0" Padding="10,8"
+                                Background="{StaticResource CardBackground}" Foreground="{StaticResource TextPrimary}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" FontSize="14"/>
+                        <Button Grid.Column="2" Content="⛔ Завершить" Command="{Binding KillCommand}"
+                                Margin="10,0,0,0" Padding="10,8"
+                                Background="#D42B2B" Foreground="White"/>
+                    </Grid>
 
-        <!-- Информация -->
-        <TextBlock Grid.Row="3" Margin="0,10,0,0"
-                   Foreground="{StaticResource TextSecondary}" FontSize="12">
-            <Run Text="Процессов: "/><Run Text="{Binding Processes.Count, Mode=OneWay}"/>
-            <Run Text=" | Выбран: "/><Run Text="{Binding SelectedProcess.Name, Mode=OneWay, FallbackValue='—'}"/>
-        </TextBlock>
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding Processes}"
+                              SelectedItem="{Binding SelectedProcess}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              Background="{StaticResource CardBackground}"
+                              Foreground="{StaticResource TextPrimary}"
+                              RowBackground="{StaticResource CardBackground}"
+                              AlternatingRowBackground="#333337"
+                              BorderBrush="{StaticResource BorderBrush}"
+                              GridLinesVisibility="Horizontal" HeadersVisibility="Column" FontSize="13">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="" Binding="{Binding StatusIcon}" Width="30"/>
+                            <DataGridTextColumn Header="PID" Binding="{Binding Id}" Width="80"/>
+                            <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="200"/>
+                            <DataGridTextColumn Header="Статус" Binding="{Binding StatusText}" Width="100"/>
+                            <DataGridTextColumn Header="Память (МБ)" Binding="{Binding MemoryMb}" Width="120"/>
+                            <DataGridTextColumn Header="Потоки" Binding="{Binding Threads}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Grid.Row="2" Margin="0,10,0,0"
+                               Foreground="{StaticResource TextSecondary}" FontSize="12">
+                        <Run Text="Процессов: "/><Run Text="{Binding Processes.Count, Mode=OneWay}"/>
+                    </TextBlock>
+                </Grid>
+            </TabItem>
+
+            <!-- Автозагрузка -->
+            <TabItem Header="Автозагрузка" Background="#2D2D30" Foreground="#CCCCCC">
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding StartupSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="{StaticResource CardBackground}"
+                                 Foreground="{StaticResource TextPrimary}"
+                                 Padding="10,8" FontSize="14"/>
+                        <Button Grid.Column="1" Content="🔄" Command="{Binding RefreshStartupCommand}"
+                                Margin="10,0,0,0" Padding="10,8"
+                                Background="{StaticResource CardBackground}" Foreground="{StaticResource TextPrimary}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" FontSize="14"/>
+                    </Grid>
+
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding StartupEntries}"
+                              SelectedItem="{Binding SelectedStartupEntry}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              Background="{StaticResource CardBackground}"
+                              Foreground="{StaticResource TextPrimary}"
+                              RowBackground="{StaticResource CardBackground}"
+                              AlternatingRowBackground="#333337"
+                              BorderBrush="{StaticResource BorderBrush}"
+                              GridLinesVisibility="Horizontal" HeadersVisibility="Column" FontSize="13">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="" Binding="{Binding SourceIcon}" Width="30"/>
+                            <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="200"/>
+                            <DataGridTextColumn Header="Команда" Binding="{Binding Command}" Width="350"/>
+                            <DataGridTextColumn Header="Источник" Binding="{Binding Source}" Width="150"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

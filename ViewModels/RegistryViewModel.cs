@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,6 +21,7 @@ namespace SystemManager.ViewModels
         private readonly ObservableCollection<RegistryValueItem> _values = new();
         private readonly ObservableCollection<RegistrySearchResult> _searchResults = new();
         private readonly ObservableCollection<FavoriteRegistryEntry> _favorites = new();
+        private readonly HashSet<string> _recentlyChangedKeys = new(StringComparer.OrdinalIgnoreCase);
 
         private RegistryTreeNode? _selectedNode;
         private RegistryValueItem? _selectedValue;
@@ -135,6 +137,7 @@ namespace SystemManager.ViewModels
         public ICommand CopySearchResultPathCommand { get; }
         public ICommand LoadOfflineHiveCommand { get; }
         public ICommand UnloadOfflineHiveCommand { get; }
+        public ICommand CompareBranchesCommand { get; }
 
         public RegistryViewModel()
         {
@@ -149,18 +152,15 @@ namespace SystemManager.ViewModels
             RemoveFavoriteCommand = new RelayCommand(param => RemoveFavorite(param as FavoriteRegistryEntry));
             SearchCommand = new RelayCommand(_ => Search());
             NavigateToFavoriteCommand = new RelayCommand(param => NavigateToFavorite(param as FavoriteRegistryEntry));
-            NavigateToSearchResultCommand =
-                new RelayCommand(param => NavigateToSearchResult(param as RegistrySearchResult));
-
-            LoadOfflineHiveCommand = new RelayCommand(param => LoadOfflineHive(param?.ToString()));
-            UnloadOfflineHiveCommand = new RelayCommand(param => UnloadOfflineHive(param?.ToString()));
-
+            NavigateToSearchResultCommand = new RelayCommand(param => NavigateToSearchResult(param as RegistrySearchResult));
             CopyKeyPathCommand = new RelayCommand(_ => CopyKeyPath());
             ExportKeyCommand = new RelayCommand(_ => ExportKey());
             CopyValueNameCommand = new RelayCommand(param => CopyValueName(param as RegistryValueItem));
             CopyValueDataCommand = new RelayCommand(param => CopyValueData(param as RegistryValueItem));
-            CopySearchResultPathCommand =
-                new RelayCommand(param => CopySearchResultPath(param as RegistrySearchResult));
+            CopySearchResultPathCommand = new RelayCommand(param => CopySearchResultPath(param as RegistrySearchResult));
+            LoadOfflineHiveCommand = new RelayCommand(param => LoadOfflineHive(param?.ToString()));
+            UnloadOfflineHiveCommand = new RelayCommand(param => UnloadOfflineHive(param?.ToString()));
+            CompareBranchesCommand = new RelayCommand(_ => CompareBranches());
 
             LoadRootKeys();
             LoadFavorites();
@@ -254,6 +254,64 @@ namespace SystemManager.ViewModels
             catch (Exception ex)
             {
                 Debug.WriteLine($"Ошибка загрузки подключей: {ex.Message}");
+            }
+        }
+
+        private void CompareBranches()
+        {
+            if (SelectedNode == null || !SelectedNode.Hive.HasValue)
+            {
+                StatusMessage = "Выберите ключ для сравнения";
+                return;
+            }
+
+            try
+            {
+                var baseKey = SelectedNode.Hive.Value switch
+                {
+                    RegistryHive.ClassesRoot => Registry.ClassesRoot,
+                    RegistryHive.CurrentUser => Registry.CurrentUser,
+                    RegistryHive.LocalMachine => Registry.LocalMachine,
+                    RegistryHive.Users => Registry.Users,
+                    RegistryHive.CurrentConfig => Registry.CurrentConfig,
+                    _ => null
+                };
+
+                if (baseKey == null) return;
+
+                using var key = baseKey.OpenSubKey(SelectedNode.FullPath, false);
+                if (key == null) return;
+
+                var values = new List<string>();
+                foreach (var valueName in key.GetValueNames())
+                {
+                    var val = key.GetValue(valueName);
+                    var kind = key.GetValueKind(valueName);
+                    values.Add($"{valueName} ({kind}) = {val}");
+                }
+
+                var subKeys = key.GetSubKeyNames();
+
+                var report = $"Ключ: {SelectedNode.Hive}\\{SelectedNode.FullPath}\n\n" +
+                             $"Подключи ({subKeys.Length}):\n" +
+                             string.Join("\n", subKeys.Select(k => $"  {k}")) +
+                             $"\n\nЗначения ({values.Count}):\n" +
+                             string.Join("\n", values.Select(v => $"  {v}"));
+
+                var path = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    $"RegistryExport_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                File.WriteAllText(path, report);
+
+                MessageBox.Show($"Экспортировано в:\n{path}\n\n{report}",
+                    $"Сравнение ветки: {SelectedNode.Name}",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+
+                StatusMessage = $"Ветка экспортирована: {SelectedNode.FullPath}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Ошибка: {ex.Message}";
             }
         }
 

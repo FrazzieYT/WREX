@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
@@ -56,6 +56,8 @@ namespace SystemManager.Models
         public string ValueDisplay => Value?.ToString() ?? "(не установлено)";
         public bool IsFavorite => RegistryService.IsFavorite(Hive, FullPath, Name);
 
+        public override string ToString() => $"{Name} ({Kind}) = {ValueDisplay}";
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -78,5 +80,11 @@ namespace SystemManager.Models
         public string KeyPath { get; set; } = "";
         public string? ValueName { get; set; }
         public string DisplayName { get; set; } = "";
+
+        public string Name => !string.IsNullOrEmpty(ValueName) ? ValueName : DisplayName;
+        public string Path => KeyPath;
+        public string HiveDisplay => Hive.ToString();
+
+        public override string ToString() => $"{Name} - {Path}";
     }
 }

@@ -12,14 +12,20 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <DockPanel Margin="5">
-            <Button Content="🏠 Домой" Command="{Binding NavigateHomeCommand}" 
-                    Padding="10,5" Margin="0,0,5,0"/>
+
+        <DockPanel Grid.Row="0" Margin="5">
+            <Button Content="🏠" Command="{Binding NavigateHomeCommand}" 
+                    Padding="8,5" Margin="0,0,5,0" FontSize="14" ToolTip="Домой"/>
+            <Button Content="🔄" Command="{Binding RefreshCommand}" 
+                    Padding="8,5" Margin="0,0,5,0" FontSize="14" ToolTip="Обновить"/>
+            <Button Content="⊞" Command="{Binding ToggleDualPanelCommand}" 
+                    Padding="8,5" Margin="0,0,5,0" FontSize="14" ToolTip="Двухпанельный режим"/>
             <TextBox Text="{Binding CurrentPath, UpdateSourceTrigger=PropertyChanged}" 
-                     VerticalContentAlignment="Center">
+                     VerticalContentAlignment="Center" Margin="0,0,5,0">
                 <TextBox.InputBindings>
                     <KeyBinding Key="Enter" Command="{Binding NavigateCommand}" 
                                CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"/>
@@ -27,33 +33,180 @@
             </TextBox>
         </DockPanel>
 
-        <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
-                 Background="#2D2D30" Foreground="White"
-                 MouseDoubleClick="ListBox_MouseDoubleClick"
-                 ContextMenu="{StaticResource ExplorerBackgroundContextMenu}">
-            <ListBox.ItemContainerStyle>
-                <Style TargetType="ListBoxItem">
-                    <Setter Property="ContextMenu" Value="{StaticResource ExplorerItemContextMenu}"/>
-                </Style>
-            </ListBox.ItemContainerStyle>
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="25"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="100"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Text="{Binding Icon}" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="5,0" 
-                                  VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="{Binding FormattedSize}" 
-                                  HorizontalAlignment="Right" Margin="5,0" 
-                                  Foreground="#888888" VerticalAlignment="Center"/>
-                    </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <Border Grid.Row="1" Background="#252526" Padding="5" Margin="5,0,5,5" CornerRadius="4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="🔍" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox Grid.Column="1" x:Name="SearchBox"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         VerticalContentAlignment="Center"
+                         Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3F3F46"
+                         Padding="5,4" FontSize="13"/>
+                <TextBlock Grid.Column="2" Text="{Binding StatusText}" 
+                           Foreground="#888888" FontSize="11" 
+                           VerticalAlignment="Center" Margin="10,0,5,0"/>
+                <Button Grid.Column="3" Content="📋→📁" Command="{Binding CopyToSecondPanelCommand}" 
+                        Padding="5,3" Margin="2,0" FontSize="11" ToolTip="Копировать в правую панель"
+                        Visibility="{Binding IsDualPanel, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <Button Grid.Column="4" Content="📋➡📁" Command="{Binding MoveToSecondPanelCommand}" 
+                        Padding="5,3" FontSize="11" ToolTip="Переместить в правую панель"
+                        Visibility="{Binding IsDualPanel, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5" MinWidth="0">
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
+                            <Setter Property="Width" Value="5"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDualPanel}" Value="False">
+                                    <Setter Property="Width" Value="0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
+                <ColumnDefinition Width="*">
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDualPanel}" Value="False">
+                                    <Setter Property="Width" Value="0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="250">
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedItem}" Value="{x:Null}">
+                                    <Setter Property="Width" Value="0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <!-- Левая панель -->
+            <ListBox Grid.Column="0" ItemsSource="{Binding FilteredItems}" 
+                     SelectedItem="{Binding SelectedItem}"
+                     Background="#2D2D30" Foreground="White"
+                     MouseDoubleClick="ListBox_MouseDoubleClick"
+                     ContextMenu="{StaticResource ExplorerBackgroundContextMenu}">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="ContextMenu" Value="{StaticResource ExplorerItemContextMenu}"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="25"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Icon}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="5,0" 
+                                      VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="2" Text="{Binding FormattedSize}" 
+                                      HorizontalAlignment="Right" Margin="5,0" 
+                                      Foreground="#888888" VerticalAlignment="Center" FontSize="11"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Разделитель -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" 
+                          Background="#3F3F46"
+                          Visibility="{Binding IsDualPanel, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+            <!-- Правая панель -->
+            <Border Grid.Column="2"
+                    Visibility="{Binding IsDualPanel, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="5,5,5,0">
+                        <TextBlock Text="📁" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding SecondPanelPath, UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalContentAlignment="Center">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding NavigateSecondPanelCommand}"
+                                           CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                    </DockPanel>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding SecondPanelItems}"
+                             SelectedItem="{Binding SelectedItemPanel2}"
+                             Background="#2D2D30" Foreground="White"
+                             Margin="5">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Icon}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="5,0"
+                                              VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding FormattedSize}"
+                                              HorizontalAlignment="Right" Margin="5,0"
+                                              Foreground="#888888" VerticalAlignment="Center" FontSize="11"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Разделитель превью -->
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch"
+                          Background="#3F3F46"/>
+
+            <!-- Панель предпросмотра -->
+            <Border Grid.Column="4" Background="#252526" BorderBrush="#3F3F46" BorderThickness="1,0,0,0">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Просмотр" FontSize="14" FontWeight="SemiBold"
+                               Foreground="#CCCCCC" Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="1" Text="{Binding SelectedItem.Icon}"
+                               FontSize="32" HorizontalAlignment="Center" Margin="0,5"/>
+                    <TextBox Grid.Row="2"
+                             Text="{Binding PreviewText, Mode=OneWay}"
+                             IsReadOnly="True"
+                             Background="Transparent" Foreground="#AAAAAA"
+                             FontFamily="Consolas" FontSize="11"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             BorderThickness="0"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="{Binding SelectedItemInfo}" 
+                   Foreground="#888888" FontSize="11" Margin="10,3"/>
     </Grid>
 </UserControl>

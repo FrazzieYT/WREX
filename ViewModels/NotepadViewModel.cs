@@ -1,44 +1,23 @@
-﻿using System;
-using System.ComponentModel;
+using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.Win32;
 using SystemManager.Services;
 
 namespace SystemManager.ViewModels
 {
-    public class NotepadViewModel : INotifyPropertyChanged
+    public class NotepadViewModel : ViewModelBase
     {
         private string _title = "Блокнот - Новый файл";
         private string _content = "";
         private string _currentFilePath = "";
         private string _statusInfo = "Готов";
-        private bool _isModified = false;
+        private bool _isModified;
 
-        public string Title
-        {
-            get => _title;
-            set { _title = value; OnPropertyChanged(); }
-        }
-
-        public string Content
-        {
-            get => _content;
-            set
-            {
-                _content = value;
-                _isModified = true;
-                OnPropertyChanged();
-                UpdateTitle();
-            }
-        }
-
-        public string StatusInfo
-        {
-            get => _statusInfo;
-            set { _statusInfo = value; OnPropertyChanged(); }
-        }
+        public string Title { get => _title; set => SetProperty(ref _title, value); }
+        public string Content { get => _content; set { _content = value; _isModified = true; OnPropertyChanged(); UpdateTitle(); } }
+        public string StatusInfo { get => _statusInfo; set => SetProperty(ref _statusInfo, value); }
+        public string CurrentFilePath { get => _currentFilePath; set => SetProperty(ref _currentFilePath, value); }
 
         public ICommand NewCommand { get; }
         public ICommand OpenCommand { get; }
@@ -58,119 +37,51 @@ namespace SystemManager.ViewModels
             try
             {
                 Content = File.ReadAllText(path);
-                _currentFilePath = path;
+                CurrentFilePath = path;
                 _isModified = false;
                 UpdateTitle();
-                StatusInfo = $"Открыт: {path}";
-                HistoryService.Log("Блокнот: открыт файл", path, "Notepad");
+                StatusInfo = $"Загружен: {path}";
             }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Ошибка открытия файла: {ex.Message}", "Блокнот");
-                StatusInfo = "Ошибка открытия файла";
-            }
+            catch (Exception ex) { StatusInfo = $"Ошибка: {ex.Message}"; }
         }
 
         private void NewFile()
         {
-            if (_isModified)
-            {
-                var result = System.Windows.MessageBox.Show(
-                    "Сохранить изменения перед созданием нового файла?",
-                    "Блокнот",
-                    System.Windows.MessageBoxButton.YesNoCancel);
-
-                if (result == System.Windows.MessageBoxResult.Cancel) return;
-                if (result == System.Windows.MessageBoxResult.Yes) SaveFile();
-            }
-
-            Content = "";
-            _currentFilePath = "";
-            _isModified = false;
-            Title = "Блокнот - Новый файл";
+            Content = ""; CurrentFilePath = ""; _isModified = false;
             StatusInfo = "Новый файл";
+            UpdateTitle();
         }
 
         private void OpenFile()
         {
-            if (_isModified)
-            {
-                var result = System.Windows.MessageBox.Show(
-                    "Сохранить изменения перед открытием другого файла?",
-                    "Блокнот",
-                    System.Windows.MessageBoxButton.YesNoCancel);
-
-                if (result == System.Windows.MessageBoxResult.Cancel) return;
-                if (result == System.Windows.MessageBoxResult.Yes) SaveFile();
-            }
-
-            var dialog = new OpenFileDialog
-            {
-                Filter = "Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*",
-                Title = "Открыть файл"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                LoadFile(dialog.FileName);
-            }
+            var dlg = new OpenFileDialog { Filter = "Текстовые файлы|*.txt;*.log;*.cs;*.xml;*.json;*.md|Все файлы|*.*" };
+            if (dlg.ShowDialog() == true) LoadFile(dlg.FileName);
         }
 
         private void SaveFile()
         {
-            if (string.IsNullOrEmpty(_currentFilePath))
+            if (string.IsNullOrEmpty(CurrentFilePath)) SaveFileAs();
+            else
             {
-                SaveFileAs();
-                return;
-            }
-
-            try
-            {
-                File.WriteAllText(_currentFilePath, Content);
-                _isModified = false;
-                UpdateTitle();
-                StatusInfo = $"Сохранено: {_currentFilePath}";
-                HistoryService.Log("Блокнот: сохранен файл", _currentFilePath, "Notepad");
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Блокнот");
-                StatusInfo = "Ошибка сохранения";
+                try { File.WriteAllText(CurrentFilePath, Content); _isModified = false; UpdateTitle(); StatusInfo = $"Сохранён: {CurrentFilePath}"; }
+                catch (Exception ex) { StatusInfo = $"Ошибка: {ex.Message}"; }
             }
         }
 
         private void SaveFileAs()
         {
-            var dialog = new SaveFileDialog
+            var dlg = new SaveFileDialog { Filter = "Текстовые файлы|*.txt|Все файлы|*.*", DefaultExt = ".txt" };
+            if (dlg.ShowDialog() == true)
             {
-                Filter = "Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*",
-                Title = "Сохранить как"
-            };
-
-            if (!string.IsNullOrEmpty(_currentFilePath))
-            {
-                dialog.FileName = Path.GetFileName(_currentFilePath);
-            }
-
-            if (dialog.ShowDialog() == true)
-            {
-                _currentFilePath = dialog.FileName;
-                SaveFile();
+                try { File.WriteAllText(dlg.FileName, Content); CurrentFilePath = dlg.FileName; _isModified = false; UpdateTitle(); StatusInfo = $"Сохранён: {dlg.FileName}"; }
+                catch (Exception ex) { StatusInfo = $"Ошибка: {ex.Message}"; }
             }
         }
 
         private void UpdateTitle()
         {
-            string fileName = string.IsNullOrEmpty(_currentFilePath) 
-                ? "Новый файл" 
-                : Path.GetFileName(_currentFilePath);
-            
-            string modified = _isModified ? "*" : "";
-            Title = $"Блокнот - {modified}{fileName}";
+            var name = string.IsNullOrEmpty(CurrentFilePath) ? "Новый файл" : Path.GetFileName(CurrentFilePath);
+            Title = $"Блокнот - {name}{(_isModified ? " *" : "")}";
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

@@ -118,6 +118,7 @@
                         <ListView Grid.Row="1" 
                                   x:Name="ValuesList"
                                   ItemsSource="{Binding Values}" 
+                                  SelectedItem="{Binding SelectedValue, Mode=TwoWay}"
                                   ContextMenu="{StaticResource RegistryValueContextMenu}"
                                   Margin="5"
                                   MouseDoubleClick="ValuesList_MouseDoubleClick">
