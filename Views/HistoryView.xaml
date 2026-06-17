@@ -6,57 +6,6 @@
              Background="#1E1E1E">
     <UserControl.Resources>
         <converters:CategoryColorConverter x:Key="CategoryColorConverter"/>
-        
-        <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="#0E639C"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="4"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#1177BB"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="#C50F1F"/>
-        </Style>
-        
-        <Style TargetType="ListView">
-            <Setter Property="Background" Value="#252526"/>
-            <Setter Property="Foreground" Value="#CCCCCC"/>
-            <Setter Property="BorderBrush" Value="#3F3F46"/>
-        </Style>
-        
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#3C3C3C"/>
-            <Setter Property="Foreground" Value="#CCCCCC"/>
-            <Setter Property="BorderBrush" Value="#3F3F46"/>
-            <Setter Property="Padding" Value="8,6"/>
-            <Setter Property="FontSize" Value="13"/>
-        </Style>
-        
-        <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="#3C3C3C"/>
-            <Setter Property="Foreground" Value="#CCCCCC"/>
-            <Setter Property="BorderBrush" Value="#3F3F46"/>
-            <Setter Property="Padding" Value="8,6"/>
-        </Style>
     </UserControl.Resources>
     
     <Grid>
@@ -65,55 +14,39 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
-        <!-- Панель управления -->
         <Border Grid.Row="0" Background="#2D2D30" Padding="10">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="📊 История операций"
-                               FontSize="16"
-                               FontWeight="Bold"
-                               Foreground="#CCCCCC"
-                               VerticalAlignment="Center"
-                               Margin="0,0,20,0"/>
-                    
-                    <Button Content="🗑️ Очистить историю"
-                            Style="{StaticResource DangerButton}"
-                            Command="{Binding ClearCommand}"/>
-                    
-                    <Button Content="🔄 Обновить"
-                            Style="{StaticResource ModernButton}"
-                            Command="{Binding RefreshCommand}"/>
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="#CCCCCC" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <Button Content="🗑️ Очистить" Command="{Binding ClearCommand}"
+                            Padding="15,8" Background="#C50F1F" Foreground="White" BorderThickness="0"/>
+                    <Button Content="🔄 Обновить" Command="{Binding RefreshCommand}"
+                            Padding="15,8" Margin="10,0,0,0" Background="#0E639C" Foreground="White" BorderThickness="0"/>
                 </StackPanel>
-                
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    
-                    <TextBox Grid.Column="0"
-                             Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,10,0"/>
-                    
-                    <ComboBox Grid.Column="1"
-                              ItemsSource="{Binding Categories}"
-                              SelectedItem="{Binding CategoryFilter}"
-                              Width="150"/>
+                    <TextBox Grid.Column="0" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,10,0" Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3F3F46" Padding="8,6"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Categories}"
+                              SelectedItem="{Binding CategoryFilter}" Width="150"
+                              Background="#3C3C3C" Foreground="#CCCCCC" BorderBrush="#3F3F46"/>
                 </Grid>
             </StackPanel>
         </Border>
         
-        <!-- Список истории -->
-        <ListView Grid.Row="1"
-                  ItemsSource="{Binding FilteredEntries}"
-                  Margin="5">
+        <ListView Grid.Row="1" ItemsSource="{Binding FilteredEntries}" Margin="5"
+                  Background="#252526" Foreground="#CCCCCC" BorderBrush="#3F3F46">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Время" Width="150">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Timestamp, StringFormat={}{0:dd.MM.yyyy HH:mm:ss}}"
-                                           Foreground="#CCCCCC"/>
+                                <TextBlock Text="{Binding Timestamp, StringFormat={}{0:dd.MM.yyyy HH:mm:ss}}" Foreground="#CCCCCC"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -122,27 +55,36 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Border Background="{Binding Category, Converter={StaticResource CategoryColorConverter}}"
-                                        CornerRadius="3"
-                                        Padding="5,2">
-                                    <TextBlock Text="{Binding Category}"
-                                               Foreground="White"
-                                               FontSize="11"/>
+                                        CornerRadius="3" Padding="5,2">
+                                    <TextBlock Text="{Binding Category}" Foreground="White" FontSize="11"/>
                                 </Border>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     
-                    <GridViewColumn Header="Действие" Width="250" DisplayMemberBinding="{Binding Action}"/>
-                    <GridViewColumn Header="Детали" Width="500" DisplayMemberBinding="{Binding Details}"/>
+                    <GridViewColumn Header="Действие" Width="250">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Action}" Foreground="#CCCCCC"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    
+                    <GridViewColumn Header="Детали" Width="500">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Details}" Foreground="#CCCCCC" TextTrimming="CharacterEllipsis"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
             
             <ListView.ContextMenu>
-                <ContextMenu>
+                <ContextMenu Background="#2D2D30" Foreground="#CCCCCC">
                     <MenuItem Header="📋 Копировать" Click="CopyHistoryEntry_Click"/>
                     <Separator/>
-                    <MenuItem Header="🗑️ Удалить запись"
-                              Command="{Binding DeleteCommand}"
+                    <MenuItem Header="🗑️ Удалить запись" Command="{Binding DeleteCommand}"
                               CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ListView}}"/>
                 </ContextMenu>
             </ListView.ContextMenu>

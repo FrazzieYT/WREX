@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using SystemManager.Services;
@@ -11,8 +10,6 @@ namespace SystemManager
 {
     public partial class MainWindow : Window
     {
-        private bool _isAlwaysOnTop = false;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -23,21 +20,9 @@ namespace SystemManager
         {
             try
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "https://github.com/FrazzieYT/WREX",
-                    UseShellExecute = true
-                };
-                Process.Start(psi);
+                Process.Start(new ProcessStartInfo { FileName = "https://github.com/FrazzieYT/WREX", UseShellExecute = true });
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "Не удалось открыть ссылку в браузере.\n\nОшибка: " + ex.Message,
-                    "Ошибка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            catch { }
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -47,106 +32,55 @@ namespace SystemManager
 
         private void AlwaysOnTopButton_Click(object sender, RoutedEventArgs e)
         {
-            _isAlwaysOnTop = !_isAlwaysOnTop;
-            this.Topmost = _isAlwaysOnTop;
-
+            this.Topmost = !this.Topmost;
             SettingsPopup.IsOpen = false;
-
-            if (DataContext is ViewModels.MainViewModel vm)
-            {
-                vm.IsTopmost = !vm.IsTopmost;
-
-                this.Topmost = vm.IsTopmost;
-                vm.StatusMessage = vm.IsTopmost ?
-                    "Режим «Поверх всех окон» включен" :
-                    "Режим «Поверх всех окон» выключен";
-
-                vm.CurrentStatus = ViewModels.OperationStatus.Ready;
-            }
+            AlwaysOnTopButton.Content = this.Topmost ? "✅ Поверх всех окон (ВКЛ)" : "🔝 Поверх всех окон (ВЫКЛ)";
+            var converter = new System.Windows.Media.BrushConverter();
+            AlwaysOnTopButton.Background = this.Topmost
+                ? (System.Windows.Media.Brush)converter.ConvertFromString("#0078D4")!
+                : (System.Windows.Media.Brush)converter.ConvertFromString("#3E3E42")!;
         }
 
         private async void CheckUpdateButton_Click(object sender, RoutedEventArgs e)
         {
             SettingsPopup.IsOpen = false;
 
-            var viewModel = DataContext as ViewModels.MainViewModel;
-            if (viewModel != null)
+            if (DataContext is ViewModels.MainViewModel vm)
             {
-                viewModel.StatusMessage = "Проверка обновлений...";
-                viewModel.CurrentStatus = ViewModels.OperationStatus.Processing;
-            }
+                vm.StatusMessage = "Проверка обновлений...";
+                vm.CurrentStatus = ViewModels.OperationStatus.Processing;
 
-            try
-            {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("WREX-App");
-
-                var response = await client.GetStringAsync("https://api.github.com/repos/FrazzieYT/WREX/releases/latest");
-                var json = JsonDocument.Parse(response);
-
-                if (json.RootElement.TryGetProperty("tag_name", out var tagName))
+                try
                 {
-                    string latestVersion = tagName.GetString() ?? "неизвестно";
-                    string currentVersion = "1.0.0";
+                    using var client = new HttpClient();
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("WREX-App");
+                    var response = await client.GetStringAsync("https://api.github.com/repos/FrazzieYT/WREX/releases/latest");
+                    var json = JsonDocument.Parse(response);
 
-                    if (string.Compare(latestVersion, currentVersion, StringComparison.OrdinalIgnoreCase) > 0)
+                    if (json.RootElement.TryGetProperty("tag_name", out var tagName))
                     {
-                        var result = MessageBox.Show(
-                            $"Доступна новая версия: {latestVersion}\n\nОткрыть страницу релиза?",
-                            "Обновление доступно",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Information);
-
-                        if (result == MessageBoxResult.Yes)
+                        string latest = tagName.GetString() ?? "";
+                        if (string.Compare(latest, "1.0.0", StringComparison.OrdinalIgnoreCase) > 0)
                         {
-                            if (json.RootElement.TryGetProperty("html_url", out var htmlUrl))
+                            if (MessageBox.Show($"Доступна версия: {latest}\n\nОткрыть страницу релиза?",
+                                "Обновление", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                             {
-                                string? releaseUrl = htmlUrl.GetString();
-                                if (!string.IsNullOrEmpty(releaseUrl))
-                                {
-                                    Process.Start(new ProcessStartInfo
-                                    {
-                                        FileName = releaseUrl,
-                                        UseShellExecute = true
-                                    });
-                                }
+                                if (json.RootElement.TryGetProperty("html_url", out var url))
+                                    Process.Start(new ProcessStartInfo { FileName = url.GetString() ?? "", UseShellExecute = true });
                             }
+                            vm.StatusMessage = $"Новая версия: {latest}";
                         }
-
-                        if (viewModel != null)
+                        else
                         {
-                            viewModel.StatusMessage = $"Найдена новая версия: {latestVersion}";
-                            viewModel.CurrentStatus = ViewModels.OperationStatus.Completed;
+                            vm.StatusMessage = "Актуальная версия";
                         }
-                    }
-                    else
-                    {
-                        MessageBox.Show(
-                            $"У вас установлена актуальная версия ({currentVersion})",
-                            "Обновления не требуются",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-
-                        if (viewModel != null)
-                        {
-                            viewModel.StatusMessage = "Установлена актуальная версия";
-                            viewModel.CurrentStatus = ViewModels.OperationStatus.Ready;
-                        }
+                        vm.CurrentStatus = ViewModels.OperationStatus.Completed;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "Не удалось проверить обновления.\n\nОшибка: " + ex.Message,
-                    "Ошибка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-
-                if (viewModel != null)
+                catch
                 {
-                    viewModel.StatusMessage = "Ошибка проверки обновлений";
-                    viewModel.CurrentStatus = ViewModels.OperationStatus.Error;
+                    vm.StatusMessage = "Ошибка проверки обновлений";
+                    vm.CurrentStatus = ViewModels.OperationStatus.Error;
                 }
             }
         }
@@ -154,18 +88,14 @@ namespace SystemManager
         private void StartupButton_Click(object sender, RoutedEventArgs e)
         {
             SettingsPopup.IsOpen = false;
-
             StartupService.Toggle();
-            bool isEnabled = StartupService.IsEnabled();
+            bool enabled = StartupService.IsEnabled();
 
             if (DataContext is ViewModels.MainViewModel vm)
             {
-                vm.StatusMessage = isEnabled
-                    ? "Добавлено в автозагрузку"
-                    : "Удалено из автозагрузки";
+                vm.StatusMessage = enabled ? "Автозагрузка: ВКЛ" : "Автозагрузка: ВЫКЛ";
                 vm.CurrentStatus = ViewModels.OperationStatus.Completed;
             }
-
             TrayIconService.UpdateTooltip();
         }
     }

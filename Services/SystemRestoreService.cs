@@ -12,6 +12,8 @@ namespace SystemManager.Services
             var points = new List<RestorePointInfo>();
             try
             {
+                if (RegistryService.IsWinRE()) return points;
+
                 using var searcher = new ManagementObjectSearcher(
                     "root\\default",
                     "SELECT * FROM SystemRestore");
@@ -38,6 +40,11 @@ namespace SystemManager.Services
 
         public static bool CreateRestorePoint(string description, int type = 12)
         {
+            if (RegistryService.IsWinRE())
+            {
+                MessageBox.Show("Точки восстановления недоступны в WinRE.", "Информация");
+                return false;
+            }
             try
             {
                 var scope = new ManagementScope(@"\\.\root\default");

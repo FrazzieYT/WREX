@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -8,12 +9,21 @@ namespace SystemManager
     public partial class App : Application
     {
         private MainWindow? _mainWindow;
+        private Mutex? _mutex;
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            _mutex = new Mutex(true, "WREX_SingleInstance", out bool createdNew);
+            if (!createdNew)
+            {
+                MessageBox.Show("WREX уже запущен.", "WREX", MessageBoxButton.OK, MessageBoxImage.Information);
+                Shutdown();
+                return;
+            }
+
             base.OnStartup(e);
-            DispatcherUnhandledException += App_DispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            DispatcherUnhandledException += (_, args) => { args.Handled = true; };
+            AppDomain.CurrentDomain.UnhandledException += (_, args) => { };
 
             try { Services.FileMonitorService.Start(); } catch { }
             try { Services.RegistryMonitorService.Start(); } catch { }
@@ -32,8 +42,8 @@ namespace SystemManager
 
             if (startMinimized)
             {
-                _mainWindow.WindowState = WindowState.Minimized;
                 _mainWindow.ShowInTaskbar = false;
+                _mainWindow.WindowState = WindowState.Minimized;
                 _mainWindow.Show();
                 _mainWindow.Hide();
             }
@@ -69,6 +79,8 @@ namespace SystemManager
             try { Services.FileMonitorService.Stop(); } catch { }
             try { Services.RegistryMonitorService.Stop(); } catch { }
             try { Services.TrayIconService.Dispose(); } catch { }
+            try { _mutex?.ReleaseMutex(); } catch { }
+            _mutex?.Dispose();
             if (_mainWindow != null) { _mainWindow.Closing -= MainWindow_Closing; _mainWindow.Close(); }
             Shutdown();
         }
@@ -78,16 +90,9 @@ namespace SystemManager
             try { Services.FileMonitorService.Stop(); } catch { }
             try { Services.RegistryMonitorService.Stop(); } catch { }
             try { Services.TrayIconService.Dispose(); } catch { }
+            try { _mutex?.ReleaseMutex(); } catch { }
+            _mutex?.Dispose();
             base.OnExit(e);
-        }
-
-        private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        {
-            e.Handled = true;
-        }
-
-        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
         }
     }
 }

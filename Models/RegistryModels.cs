@@ -72,6 +72,7 @@ namespace SystemManager.Models
         public RegistryHive Hive { get; set; }
         public string KeyPath { get; set; } = "";
         public string FullPath => $@"{Path}\{Name}";
+        public override string ToString() => $"[{Type}] {Name} — {Value ?? ""}";
     }
 
     public class FavoriteRegistryEntry

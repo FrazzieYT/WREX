@@ -9,7 +9,7 @@
         Height="700" Width="1100"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
-        Topmost="{Binding IsTopmost, Mode=TwoWay}">
+        Topmost="True">
 
     <Window.Resources>
         <SolidColorBrush x:Key="DarkBackground" Color="#1E1E1E"/>
@@ -47,9 +47,6 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:CleanupViewModel}">
             <v:CleanupView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ServiceManagerViewModel}">
-            <v:ServiceManagerView />
         </DataTemplate>
     </Window.Resources>
 
@@ -95,13 +92,6 @@
                                        Margin="12,0,0,0"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="github.com/FrazzieYT/WREX"
-                                   FontSize="11"
-                                   Foreground="#569CD6"
-                                   Margin="0,4,0,0"
-                                   Cursor="Hand"
-                                   ToolTip="Открыть репозиторий на GitHub"
-                                   MouseLeftButtonDown="GitHubLink_MouseLeftButtonDown"/>
                     </StackPanel>
 
                     <!-- ListBox в середине -->
@@ -178,12 +168,6 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Broom" Width="22" Height="22" VerticalAlignment="Center"/>
                                 <TextBlock Text="Очистка" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="14"/>
-                            </StackPanel>
-                        </ListBoxItem>
-                        <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Cog" Width="22" Height="22" VerticalAlignment="Center"/>
-                                <TextBlock Text="Службы" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="14"/>
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem>
@@ -318,129 +302,28 @@
                     Padding="5"
                     Margin="0,0,0,10">
                 <StackPanel>
-                    <Button x:Name="AlwaysOnTopButton"
-                            Click="AlwaysOnTopButton_Click"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            HorizontalContentAlignment="Left"
-                            Padding="10,8"
-                            Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="border" 
-                                                    Background="Transparent"
-                                                    CornerRadius="4"
-                                                    Padding="{TemplateBinding Padding}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock x:Name="IconText"
-                                                               Text="🔝" 
-                                                               FontSize="16" 
-                                                               VerticalAlignment="Center"/>
-                                                    <TextBlock x:Name="LabelText"
-                                                               Text=" Поверх всех окон" 
-                                                               Foreground="White" 
-                                                               FontSize="13"
-                                                               VerticalAlignment="Center"
-                                                               Margin="8,0,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="border" Property="Background" Value="#3E3E42"/>
-                                                </Trigger>
-                                                <DataTrigger Binding="{Binding DataContext.IsTopmost, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                    <Setter TargetName="IconText" Property="Text" Value="✅"/>
-                                                    <Setter TargetName="LabelText" Property="Text" Value=" Поверх всех окон (ВКЛ)"/>
-                                                    <Setter TargetName="border" Property="Background" Value="#0078D4"/>
-                                                </DataTrigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    
-                    <Separator Background="#3E3E42" Margin="5,2"/>
-                    
-                    <Button x:Name="CheckUpdateButton"
-                            Click="CheckUpdateButton_Click"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            HorizontalContentAlignment="Left"
-                            Padding="10,8"
-                            Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="border" 
-                                                    Background="Transparent"
-                                                    CornerRadius="4"
-                                                    Padding="{TemplateBinding Padding}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="🔄" FontSize="16" VerticalAlignment="Center"/>
-                                                    <TextBlock Text=" Проверить обновление" 
-                                                               Foreground="White" 
-                                                               FontSize="13"
-                                                               VerticalAlignment="Center"
-                                                               Margin="8,0,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="border" Property="Background" Value="#3E3E42"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                    <Button x:Name="AlwaysOnTopButton" Click="AlwaysOnTopButton_Click"
+                            Content="✅ Поверх всех окон (ВКЛ)"
+                            Background="#0078D4" Foreground="White"
+                            BorderThickness="0" Padding="15,8" Margin="2"
+                            HorizontalContentAlignment="Left" Cursor="Hand"/>
 
-                    <Separator Background="#3E3E42" Margin="5,2"/>
+                    <Button x:Name="CheckUpdateButton" Click="CheckUpdateButton_Click"
+                            Content="🔄 Проверить обновление"
+                            Background="#3E3E42" Foreground="White"
+                            BorderThickness="0" Padding="15,8" Margin="2"
+                            HorizontalContentAlignment="Left" Cursor="Hand"/>
 
-                    <Button x:Name="StartupButton"
-                            Click="StartupButton_Click"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            HorizontalContentAlignment="Left"
-                            Padding="10,8"
-                            Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="border" 
-                                                    Background="Transparent"
-                                                    CornerRadius="4"
-                                                    Padding="{TemplateBinding Padding}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock x:Name="StartupIcon" Text="🚀" FontSize="16" VerticalAlignment="Center"/>
-                                                    <TextBlock x:Name="StartupLabel" Text=" Добавить в автозагрузку" 
-                                                               Foreground="White" 
-                                                               FontSize="13"
-                                                               VerticalAlignment="Center"
-                                                               Margin="8,0,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="border" Property="Background" Value="#3E3E42"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                    <Button x:Name="StartupButton" Click="StartupButton_Click"
+                            Content="🚀 Автозагрузка"
+                            Background="#3E3E42" Foreground="White"
+                            BorderThickness="0" Padding="15,8" Margin="2"
+                            HorizontalContentAlignment="Left" Cursor="Hand"/>
+
+                    <TextBlock Text="github.com/FrazzieYT/WREX"
+                               FontSize="10" Foreground="#569CD6"
+                               Cursor="Hand" Margin="10,6,0,4"
+                               MouseLeftButtonDown="GitHubLink_MouseLeftButtonDown"/>
                 </StackPanel>
             </Border>
         </Popup>

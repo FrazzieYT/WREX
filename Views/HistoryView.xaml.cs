@@ -10,7 +10,6 @@ namespace SystemManager.Views
         public HistoryView()
         {
             InitializeComponent();
-            DataContext = new HistoryViewModel();
         }
 
         private void CopyHistoryEntry_Click(object sender, RoutedEventArgs e)

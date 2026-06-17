@@ -1,7 +1,6 @@
 <UserControl x:Class="SystemManager.Views.CleanupView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <SolidColorBrush x:Key="CardBackground" Color="#2D2D30"/>
         <SolidColorBrush x:Key="AccentColor" Color="#0078D4"/>
@@ -19,24 +18,17 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Заголовок -->
         <StackPanel Grid.Row="0" Margin="30,30,30,20">
-            <TextBlock Text="Очистка системы"
-                       FontSize="28" FontWeight="Bold"
-                       Foreground="{StaticResource TextPrimary}"
-                       Margin="0,0,0,5"/>
-            <TextBlock Text="Удаление временных файлов и кэша для освобождения дискового пространства"
-                       FontSize="14"
+            <TextBlock Text="Очистка системы" FontSize="28" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
+            <TextBlock Text="Удаление временных файлов и кэша" FontSize="14"
                        Foreground="{StaticResource TextSecondary}"/>
         </StackPanel>
 
-        <!-- Содержимое -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="30,0,30,30">
-                
                 <!-- Статистика -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="20" Margin="0,0,0,20"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="20" Margin="0,0,0,20"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -44,218 +36,133 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="Удалено файлов" 
-                                       Foreground="{StaticResource TextSecondary}" 
-                                       FontSize="12" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding TotalDeletedFiles}" 
-                                       FontSize="24" FontWeight="Bold" 
-                                       Foreground="{StaticResource TextPrimary}" 
-                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Удалено файлов" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                            <TextBlock Text="{Binding TotalDeletedFiles}" FontSize="24" FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center"/>
                         </StackPanel>
-                        
                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                            <TextBlock Text="Удалено папок" 
-                                       Foreground="{StaticResource TextSecondary}" 
-                                       FontSize="12" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding TotalDeletedDirectories}" 
-                                       FontSize="24" FontWeight="Bold" 
-                                       Foreground="{StaticResource TextPrimary}" 
-                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Удалено папок" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                            <TextBlock Text="{Binding TotalDeletedDirectories}" FontSize="24" FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center"/>
                         </StackPanel>
-                        
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="Освобождено" 
-                                       Foreground="{StaticResource TextSecondary}" 
-                                       FontSize="12" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding FormattedFreedBytes}" 
-                                       FontSize="24" FontWeight="Bold" 
-                                       Foreground="{StaticResource SuccessColor}" 
-                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Освобождено" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                            <TextBlock Text="{Binding FormattedFreedBytes}" FontSize="24" FontWeight="Bold"
+                                       Foreground="{StaticResource SuccessColor}" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
                 <!-- Полная очистка -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="20" Margin="0,0,0,15"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="20" Margin="0,0,0,15"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <materialDesign:PackIcon Kind="Broom" Width="40" Height="40"
-                                                 Foreground="{StaticResource AccentColor}"
-                                                 VerticalAlignment="Center" Margin="0,0,15,0"/>
-                        
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Полная очистка" FontSize="16" FontWeight="SemiBold"
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="🧹 Полная очистка" FontSize="16" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimary}"/>
                             <TextBlock Text="Очистка всех временных папок и кэша" FontSize="12"
                                        Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
-                        
-                        <Button Grid.Column="2" Content="Запустить"
-                                Command="{Binding FullCleanupCommand}"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBoolConverter}}"
-                                Background="{StaticResource AccentColor}"
-                                Foreground="White" Padding="20,8"
-                                Style="{StaticResource MaterialDesignRaisedButton}"/>
+                        <Button Grid.Column="1" Content="Запустить" Command="{Binding FullCleanupCommand}"
+                                Padding="20,8" Background="{StaticResource AccentColor}" Foreground="White"/>
                     </Grid>
                 </Border>
 
-                <!-- Отдельные операции -->
                 <TextBlock Text="Отдельные операции" FontSize="16" FontWeight="SemiBold"
                            Foreground="{StaticResource TextPrimary}" Margin="0,10,0,10"/>
 
                 <!-- Temp -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="15" Margin="0,0,0,10"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="15" Margin="0,0,0,10"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <materialDesign:PackIcon Kind="FileDocumentOutline" Width="32" Height="32"
-                                                 Foreground="{StaticResource WarningColor}"
-                                                 VerticalAlignment="Center" Margin="0,0,15,0"/>
-                        
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Временные файлы (Temp)" FontSize="14" FontWeight="SemiBold"
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="📄 Временные файлы (Temp)" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimary}"/>
                             <TextBlock Text="%TEMP% - временные файлы пользователя" FontSize="11"
                                        Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
-                        
-                        <Button Grid.Column="2" Content="Очистить"
-                                Command="{Binding CleanTempCommand}"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBoolConverter}}"
-                                Background="{StaticResource WarningColor}"
-                                Foreground="White" Padding="15,6"
-                                Style="{StaticResource MaterialDesignRaisedButton}"/>
+                        <Button Grid.Column="1" Content="Очистить" Command="{Binding CleanTempCommand}"
+                                Padding="15,6" Background="{StaticResource WarningColor}" Foreground="White"/>
                     </Grid>
                 </Border>
 
                 <!-- Prefetch -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="15" Margin="0,0,0,10"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="15" Margin="0,0,0,10"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <materialDesign:PackIcon Kind="Speedometer" Width="32" Height="32"
-                                                 Foreground="{StaticResource WarningColor}"
-                                                 VerticalAlignment="Center" Margin="0,0,15,0"/>
-                        
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Prefetch" FontSize="14" FontWeight="SemiBold"
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="⚡ Prefetch" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimary}"/>
-                            <TextBlock Text="Windows\Prefetch - кэш запуска приложений" FontSize="11"
+                            <TextBlock Text="Кэш запуска приложений" FontSize="11"
                                        Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
-                        
-                        <Button Grid.Column="2" Content="Очистить"
-                                Command="{Binding CleanPrefetchCommand}"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBoolConverter}}"
-                                Background="{StaticResource WarningColor}"
-                                Foreground="White" Padding="15,6"
-                                Style="{StaticResource MaterialDesignRaisedButton}"/>
+                        <Button Grid.Column="1" Content="Очистить" Command="{Binding CleanPrefetchCommand}"
+                                Padding="15,6" Background="{StaticResource WarningColor}" Foreground="White"/>
                     </Grid>
                 </Border>
 
                 <!-- Recent -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="15" Margin="0,0,0,10"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="15" Margin="0,0,0,10"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <materialDesign:PackIcon Kind="History" Width="32" Height="32"
-                                                 Foreground="{StaticResource WarningColor}"
-                                                 VerticalAlignment="Center" Margin="0,0,15,0"/>
-                        
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Недавние документы" FontSize="14" FontWeight="SemiBold"
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="📋 Недавние документы" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimary}"/>
-                            <TextBlock Text="Recent - ярлыки недавно открытых файлов" FontSize="11"
+                            <TextBlock Text="Ярлыки недавно открытых файлов" FontSize="11"
                                        Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
-                        
-                        <Button Grid.Column="2" Content="Очистить"
-                                Command="{Binding CleanRecentCommand}"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBoolConverter}}"
-                                Background="{StaticResource WarningColor}"
-                                Foreground="White" Padding="15,6"
-                                Style="{StaticResource MaterialDesignRaisedButton}"/>
+                        <Button Grid.Column="1" Content="Очистить" Command="{Binding CleanRecentCommand}"
+                                Padding="15,6" Background="{StaticResource WarningColor}" Foreground="White"/>
                     </Grid>
                 </Border>
 
                 <!-- Windows Temp -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="15" Margin="0,0,0,10"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="15" Margin="0,0,0,10"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <materialDesign:PackIcon Kind="MicrosoftWindows" Width="32" Height="32"
-                                                 Foreground="{StaticResource WarningColor}"
-                                                 VerticalAlignment="Center" Margin="0,0,15,0"/>
-                        
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Windows Temp" FontSize="14" FontWeight="SemiBold"
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="🪟 Windows Temp" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimary}"/>
-                            <TextBlock Text="Windows\Temp - системные временные файлы" FontSize="11"
+                            <TextBlock Text="Системные временные файлы" FontSize="11"
                                        Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
-                        
-                        <Button Grid.Column="2" Content="Очистить"
-                                Command="{Binding CleanWindowsTempCommand}"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBoolConverter}}"
-                                Background="{StaticResource WarningColor}"
-                                Foreground="White" Padding="15,6"
-                                Style="{StaticResource MaterialDesignRaisedButton}"/>
+                        <Button Grid.Column="1" Content="Очистить" Command="{Binding CleanWindowsTempCommand}"
+                                Padding="15,6" Background="{StaticResource WarningColor}" Foreground="White"/>
                     </Grid>
                 </Border>
 
                 <!-- Результат -->
-                <Border Background="{StaticResource CardBackground}"
-                        CornerRadius="8" Padding="20" Margin="0,20,0,0"
+                <Border Background="{StaticResource CardBackground}" CornerRadius="8" Padding="20" Margin="0,20,0,0"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                         Visibility="{Binding HasResult, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel>
-                        <TextBlock Text="Последний результат" FontSize="14" FontWeight="SemiBold"
+                        <TextBlock Text="Результат" FontSize="14" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimary}" Margin="0,0,0,10"/>
-                        <TextBlock Text="{Binding LastResult}" 
-                                   FontSize="13" Foreground="{StaticResource TextSecondary}"
-                                   TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding LastResult}" FontSize="13"
+                                   Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
-
-                <!-- Индикатор загрузки -->
-                <ProgressBar IsIndeterminate="True" 
-                             Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}"
-                             Margin="0,20,0,0" Height="4"
-                             Foreground="{StaticResource AccentColor}"/>
-                <!-- Сделать работу с данными и резервными копиями -->
             </StackPanel>
         </ScrollViewer>
     </Grid>

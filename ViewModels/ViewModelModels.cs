@@ -32,6 +32,7 @@ namespace SystemManager.ViewModels
         public string Description { get; set; } = "";
         public string FileName { get; set; } = "";
         public string Arguments { get; set; } = "";
+        public bool IsAvailable => System.IO.File.Exists(FileName) || FileName.Contains(".msc");
     }
 
     public class QuickCommand

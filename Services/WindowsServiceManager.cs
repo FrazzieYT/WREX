@@ -15,6 +15,8 @@ namespace SystemManager.Services
             var services = new List<ServiceInfo>();
             try
             {
+                if (RegistryService.IsWinRE()) return services;
+
                 using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Service");
                 foreach (ManagementObject obj in searcher.Get())
                 {

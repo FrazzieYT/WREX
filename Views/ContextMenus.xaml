@@ -250,6 +250,14 @@
                 <TextBlock Text="🔍" FontSize="14"/>
             </MenuItem.Icon>
         </MenuItem>
+
+        <Separator/>
+
+        <MenuItem Header="📥 Импорт из .reg файла" Command="{Binding DataContext.ImportKeyCommand, RelativeSource={RelativeSource AncestorType=TreeView}}">
+            <MenuItem.Icon>
+                <TextBlock Text="📥" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
     </ContextMenu>
     
     <!-- Контекстное меню для значений реестра (список) -->
@@ -262,6 +270,13 @@
         
         <Separator/>
         
+        <MenuItem Header="Добавить в избранное" Command="{Binding DataContext.AddFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <TextBlock Text="⭐" FontSize="14"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        
         <MenuItem Header="Удалить значение" Command="{Binding DataContext.DeleteValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
                   CommandParameter="{Binding}">
             <MenuItem.Icon>
@@ -269,14 +284,14 @@
             </MenuItem.Icon>
         </MenuItem>
         
-        <MenuItem Header="Переименовать значение" Command="{Binding DataContext.RenameValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+        <MenuItem Header="Переименовать" Command="{Binding DataContext.RenameValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
                   CommandParameter="{Binding}">
             <MenuItem.Icon>
                 <TextBlock Text="✏️" FontSize="14"/>
             </MenuItem.Icon>
         </MenuItem>
         
-        <MenuItem Header="Изменить значение" Command="{Binding DataContext.EditValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+        <MenuItem Header="Изменить" Command="{Binding DataContext.EditValueCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
                   CommandParameter="{Binding}">
             <MenuItem.Icon>
                 <TextBlock Text="💾" FontSize="14"/>
@@ -285,14 +300,14 @@
         
         <Separator/>
         
-        <MenuItem Header="Копировать имя значения" Command="{Binding DataContext.CopyValueNameCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+        <MenuItem Header="Копировать имя" Command="{Binding DataContext.CopyValueNameCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
                   CommandParameter="{Binding}">
             <MenuItem.Icon>
                 <TextBlock Text="📋" FontSize="14"/>
             </MenuItem.Icon>
         </MenuItem>
         
-        <MenuItem Header="Копировать данные значения" Command="{Binding DataContext.CopyValueDataCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
+        <MenuItem Header="Копировать данные" Command="{Binding DataContext.CopyValueDataCommand, RelativeSource={RelativeSource AncestorType=ListView}}" 
                   CommandParameter="{Binding}">
             <MenuItem.Icon>
                 <TextBlock Text="📋" FontSize="14"/>

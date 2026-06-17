@@ -183,7 +183,23 @@
                     <!-- Панель -->
                     <Border Grid.Row="0" Background="#2D2D30" Padding="10">
                         <StackPanel>
-                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,6" FontSize="13">
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Key="Return" Command="{Binding SearchCommand}"/>
+                                    </TextBox.InputBindings>
+                                </TextBox>
+                                <Button Grid.Column="1" Content="🔍 Найти"
+                                        Command="{Binding SearchCommand}"
+                                        Margin="10,0,0,0" Padding="15,6"
+                                        Background="#0078D4" Foreground="White"/>
+                            </Grid>
 
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                                 <CheckBox Content="Искать в именах ключей" IsChecked="{Binding SearchKeys}"/>
@@ -204,14 +220,22 @@
                               ItemsSource="{Binding SearchResults}" 
                               Margin="5"
                               MouseDoubleClick="SearchResults_MouseDoubleClick">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Тип" Width="80" DisplayMemberBinding="{Binding Type}"/>
-                                <GridViewColumn Header="Имя" Width="200" DisplayMemberBinding="{Binding Name}"/>
-                                <GridViewColumn Header="Путь" Width="400" DisplayMemberBinding="{Binding Path}"/>
-                                <GridViewColumn Header="Значение" Width="300" DisplayMemberBinding="{Binding Value}"/>
-                            </GridView>
-                        </ListView.View>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="200"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="200"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Type}" Foreground="#CCCCCC"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#CCCCCC"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Path}" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding Value}" Foreground="#AAAAAA" TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
                     </ListView>
                 </Grid>
             </TabItem>

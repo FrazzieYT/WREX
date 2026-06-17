@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using SystemManager.Models;
 
 namespace SystemManager.Services
@@ -10,10 +11,11 @@ namespace SystemManager.Services
     public static class HistoryService
     {
         private static readonly string HistoryFilePath = GetHistoryFilePath();
-        private static readonly HashSet<string> WrexCategories = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "System", "Navigation", "Utility", "Console", "TaskManager", "Cleanup"
-        };
+        private static ObservableCollection<HistoryEntry> _entries = new();
+        private static bool _initialized = false;
+        private static bool _dirty = false;
+        private static Timer? _saveTimer;
+        private static readonly object _lock = new();
 
         private static string GetHistoryFilePath()
         {
@@ -21,23 +23,14 @@ namespace SystemManager.Services
             {
                 var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 if (!string.IsNullOrEmpty(appData) && Directory.Exists(appData))
-                {
                     return Path.Combine(appData, "WREX", "history.json");
-                }
             }
             catch { }
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             if (!string.IsNullOrEmpty(baseDir))
-            {
                 return Path.Combine(baseDir, "WREX_Data", "history.json");
-            }
-
             return Path.Combine(@"X:\Windows\Temp", "WREX_history.json");
         }
-
-        private static ObservableCollection<HistoryEntry> _entries = new();
-        private static bool _initialized = false;
-        private static readonly object _lock = new();
 
         public static ObservableCollection<HistoryEntry> Entries
         {
@@ -50,65 +43,47 @@ namespace SystemManager.Services
 
         public static void Log(string action, string details, string category = "System")
         {
-            lock (_lock)
+            try
             {
-                if (!_initialized) Load();
-
-                var entry = new HistoryEntry
+                lock (_lock)
                 {
-                    Timestamp = DateTime.Now,
-                    Action = action,
-                    Details = details,
-                    Category = category
-                };
+                    if (!_initialized) Load();
 
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    _entries.Insert(0, entry);
-                });
+                    var entry = new HistoryEntry
+                    {
+                        Timestamp = DateTime.Now,
+                        Action = action,
+                        Details = details,
+                        Category = category
+                    };
 
-                Save();
+                    System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        _entries.Insert(0, entry);
+                        if (_entries.Count > 500) _entries.RemoveAt(_entries.Count - 1);
+                    });
+
+                    _dirty = true;
+                    ScheduleSave();
+                }
             }
+            catch { }
         }
-
-        public static void LogExternalChange(string action, string details, string category = "Monitor")
-        {
-            Log(action, details, category);
-        }
-
-        public static void LogFileCreation(string filePath, string category = "File")
-            => Log("Создание файла", filePath, category);
-
-        public static void LogFileModification(string filePath, string category = "File")
-            => Log("Изменение файла", filePath, category);
-
-        public static void LogFileDeletion(string filePath, string category = "File")
-            => Log("Удаление файла", filePath, category);
-
-        public static void LogRegistryWrite(string keyPath, string valueName, object value, string category = "Registry")
-            => Log("Запись в реестр", $"[{keyPath}] {valueName} = {value}", category);
-
-        public static void LogRegistryRead(string keyPath, string valueName, object? value, string category = "Registry")
-            => Log("Чтение реестра", $"[{keyPath}] {valueName} = {value ?? "(не установлено)"}", category);
 
         public static void Delete(HistoryEntry entry)
         {
-            lock (_lock) { _entries.Remove(entry); Save(); }
+            lock (_lock) { _entries.Remove(entry); _dirty = true; ScheduleSave(); }
         }
 
         public static void Clear()
         {
-            lock (_lock) { _entries.Clear(); Save(); }
+            lock (_lock) { _entries.Clear(); _dirty = true; ScheduleSave(); }
         }
 
-        public static void Update(HistoryEntry entry, string newAction, string newDetails)
+        private static void ScheduleSave()
         {
-            lock (_lock)
-            {
-                entry.Action = newAction;
-                entry.Details = newDetails;
-                Save();
-            }
+            _saveTimer?.Dispose();
+            _saveTimer = new Timer(_ => { if (_dirty) Save(); }, null, 2000, Timeout.Infinite);
         }
 
         public static void Load()
@@ -123,7 +98,6 @@ namespace SystemManager.Services
                         _initialized = true;
                         return;
                     }
-
                     var json = File.ReadAllText(HistoryFilePath);
                     var list = JsonSerializer.Deserialize<List<HistoryEntry>>(json);
                     _entries = new ObservableCollection<HistoryEntry>(list ?? new List<HistoryEntry>());
@@ -137,7 +111,7 @@ namespace SystemManager.Services
             }
         }
 
-        public static void Save()
+        private static void Save()
         {
             try
             {
@@ -146,7 +120,7 @@ namespace SystemManager.Services
                     Directory.CreateDirectory(dir);
 
                 List<HistoryEntry> list;
-                lock (_lock) { list = new List<HistoryEntry>(_entries); }
+                lock (_lock) { list = new List<HistoryEntry>(_entries); _dirty = false; }
 
                 var json = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(HistoryFilePath, json);

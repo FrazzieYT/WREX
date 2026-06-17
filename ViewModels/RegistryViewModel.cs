@@ -138,6 +138,7 @@ namespace SystemManager.ViewModels
         public ICommand LoadOfflineHiveCommand { get; }
         public ICommand UnloadOfflineHiveCommand { get; }
         public ICommand CompareBranchesCommand { get; }
+        public ICommand ImportKeyCommand { get; }
 
         public RegistryViewModel()
         {
@@ -148,7 +149,7 @@ namespace SystemManager.ViewModels
             DeleteValueCommand = new RelayCommand(param => DeleteValue(param as RegistryValueItem));
             RenameValueCommand = new RelayCommand(param => RenameValue(param as RegistryValueItem));
             EditValueCommand = new RelayCommand(param => EditValue(param as RegistryValueItem));
-            AddFavoriteCommand = new RelayCommand(_ => AddFavorite());
+            AddFavoriteCommand = new RelayCommand(param => AddFavorite(param as RegistryValueItem));
             RemoveFavoriteCommand = new RelayCommand(param => RemoveFavorite(param as FavoriteRegistryEntry));
             SearchCommand = new RelayCommand(_ => Search());
             NavigateToFavoriteCommand = new RelayCommand(param => NavigateToFavorite(param as FavoriteRegistryEntry));
@@ -161,6 +162,7 @@ namespace SystemManager.ViewModels
             LoadOfflineHiveCommand = new RelayCommand(param => LoadOfflineHive(param?.ToString()));
             UnloadOfflineHiveCommand = new RelayCommand(param => UnloadOfflineHive(param?.ToString()));
             CompareBranchesCommand = new RelayCommand(_ => CompareBranches());
+            ImportKeyCommand = new RelayCommand(_ => ImportKey());
 
             LoadRootKeys();
             LoadFavorites();
@@ -561,7 +563,7 @@ namespace SystemManager.ViewModels
             }
         }
 
-        private void AddFavorite()
+        private void AddFavorite(RegistryValueItem? item)
         {
             if (SelectedNode == null || !SelectedNode.Hive.HasValue)
             {
@@ -569,7 +571,8 @@ namespace SystemManager.ViewModels
                 return;
             }
 
-            RegistryService.AddToFavorites(SelectedNode.Hive.Value, SelectedNode.FullPath, SelectedValue?.Name);
+            var valueName = item?.Name ?? SelectedValue?.Name;
+            RegistryService.AddToFavorites(SelectedNode.Hive.Value, SelectedNode.FullPath, valueName);
             LoadFavorites();
             StatusMessage = "Добавлено в избранное";
         }
@@ -643,15 +646,35 @@ namespace SystemManager.ViewModels
         {
             if (result == null) return;
 
-            var node = FindNode(_rootKeys, result.Hive, result.KeyPath);
-            if (node != null)
+            try
             {
-                SelectedNode = node;
+                var hiveNode = _rootKeys.FirstOrDefault(n => n.Hive == result.Hive);
+                if (hiveNode == null) return;
+
+                if (!hiveNode.ChildrenLoaded) LoadChildren(hiveNode);
+                hiveNode.IsExpanded = true;
+
+                var parts = result.KeyPath.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+                var current = hiveNode;
+
+                foreach (var part in parts)
+                {
+                    var child = current.Children.FirstOrDefault(c =>
+                        c.Name.Equals(part, StringComparison.OrdinalIgnoreCase));
+                    if (child == null) break;
+
+                    if (!child.ChildrenLoaded) LoadChildren(child);
+                    child.IsExpanded = true;
+                    current = child;
+                }
+
+                current.IsSelected = true;
+                SelectedNode = current;
                 StatusMessage = $"Переход к: {result.FullPath}";
             }
-            else
+            catch
             {
-                StatusMessage = "Ключ не найден в дереве";
+                StatusMessage = "Ключ не найден";
             }
         }
 
@@ -694,7 +717,7 @@ namespace SystemManager.ViewModels
             }
         }
 
-        private void ExportKey()
+        private async void ExportKey()
         {
             if (SelectedNode == null || !SelectedNode.Hive.HasValue) return;
 
@@ -709,24 +732,84 @@ namespace SystemManager.ViewModels
             {
                 try
                 {
-                    var psi = new ProcessStartInfo
+                    StatusMessage = "Экспорт...";
+                    var hiveName = SelectedNode.Hive.Value switch
                     {
-                        FileName = "reg.exe",
-                        Arguments = $"export \"{SelectedNode.FullPath}\" \"{dialog.FileName}\" /y",
-                        CreateNoWindow = true,
-                        UseShellExecute = false
+                        Microsoft.Win32.RegistryHive.ClassesRoot => "HKCR",
+                        Microsoft.Win32.RegistryHive.CurrentUser => "HKCU",
+                        Microsoft.Win32.RegistryHive.LocalMachine => "HKLM",
+                        Microsoft.Win32.RegistryHive.Users => "HKU",
+                        Microsoft.Win32.RegistryHive.CurrentConfig => "HKCC",
+                        _ => ""
                     };
+                    var fullPath = $"{hiveName}\\{SelectedNode.FullPath}";
 
-                    var process = Process.Start(psi);
-                    process?.WaitForExit();
+                    await System.Threading.Tasks.Task.Run(() =>
+                    {
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "reg.exe",
+                            Arguments = $"export \"{fullPath}\" \"{dialog.FileName}\" /y",
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        };
+                        var process = Process.Start(psi);
+                        process?.WaitForExit();
+                    });
 
-                    HistoryService.Log("Экспорт ключа реестра", $"Путь: {SelectedNode.FullPath} -> {dialog.FileName}",
-                        "Registry");
-                    StatusMessage = "Ключ успешно экспортирован";
+                    HistoryService.Log("Экспорт ключа реестра", $"Путь: {fullPath} -> {dialog.FileName}", "Registry");
+                    StatusMessage = "Ключ экспортирован в " + System.IO.Path.GetFileName(dialog.FileName);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Ошибка экспорта: {ex.Message}", "Ошибка");
+                    StatusMessage = $"Ошибка: {ex.Message}";
+                }
+            }
+        }
+
+        private async void ImportKey()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Файлы реестра (*.reg)|*.reg|Все файлы (*.*)|*.*",
+                DefaultExt = "reg",
+                Title = "Импорт ключа реестра"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var result = MessageBox.Show(
+                    $"Импортировать файл?\n\n{dialog.FileName}\n\n⚠️ Это может изменить настройки системы!",
+                    "Подтверждение импорта",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes) return;
+
+                try
+                {
+                    StatusMessage = "Импорт...";
+                    await System.Threading.Tasks.Task.Run(() =>
+                    {
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "reg.exe",
+                            Arguments = $"import \"{dialog.FileName}\"",
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        };
+                        var process = Process.Start(psi);
+                        process?.WaitForExit();
+                    });
+
+                    HistoryService.Log("Импорт ключа реестра", $"Файл: {dialog.FileName}", "Registry");
+                    StatusMessage = "Импорт завершён: " + System.IO.Path.GetFileName(dialog.FileName);
+                    LoadRootKeys();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка импорта: {ex.Message}", "Ошибка");
                     StatusMessage = $"Ошибка: {ex.Message}";
                 }
             }
